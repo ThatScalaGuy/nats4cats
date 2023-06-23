@@ -5,9 +5,9 @@ Small Scala cats-effect wrapper around the official [nats.java](https://github.c
 ### Features
 
 Currently, the following features are supported:
- - [x] Publish
- - [x] Subscribe
- - [x] Request
+ - Publish
+ - Subscribe
+ - Request
 
 ### Roadmap
 *v0.x*
