@@ -24,6 +24,12 @@ ThisBuild / tlSitePublishBranch := Some("main")
 //ThisBuild / crossScalaVersions := Seq(V.Scala3, V.Scala213)
 ThisBuild / scalaVersion := V.Scala3 // the default Scala
 
+ThisBuild / githubWorkflowJavaVersions := Seq(
+  JavaSpec.temurin("8"),
+  JavaSpec.temurin("11"),
+  JavaSpec.temurin("17")
+)
+
 lazy val root = tlCrossRootProject.aggregate(core)
 
 lazy val core = project
