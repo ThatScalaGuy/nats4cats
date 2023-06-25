@@ -31,13 +31,27 @@ import cats.effect.std.Dispatcher
 import io.nats.client.impl.Headers
 
 trait Nats[F[_]] {
-  def publish[A](subject: String, value: A)(using Serializer[F, A]): F[Unit]
-  def request[A, B](subject: String, value: A)(using
+  def publish[A](subject: String, value: A, headers: Headers = Headers())(using
+      Serializer[F, A]
+  ): F[Unit]
+  def request[A, B](
+      subject: String,
+      value: A,
+      headers: Headers = Headers(),
+      duration: Duration = Duration.Inf
+  )(using
       Serializer[F, A],
       Deserializer[F, B]
   ): F[Message[B]]
   def subscribe[B](
       topic: String
+  )(handler: Function[Message[B], F[Unit]])(using
+      Deserializer[F, B]
+  ): Resource[F, Unit]
+
+  def subscribeQueue[B](
+      topic: String,
+      queue: String
   )(handler: Function[Message[B], F[Unit]])(using
       Deserializer[F, B]
   ): Resource[F, Unit]
@@ -60,24 +74,29 @@ object Nats {
         .void
     }
   } yield new Nats[F] {
-    override def publish[A](subject: String, message: A)(using
+    override def publish[A](subject: String, message: A, headers: Headers)(using
         Serializer[F, A]
     ): F[Unit] = for {
       bytes <- Serializer[F, A].serialize(
         subject,
-        Headers(),
+        headers,
         message
       )
       _ <- Sync[F].blocking(connection.publish(subject, bytes))
     } yield ()
 
-    override def request[A, B](subject: String, message: A)(using
+    override def request[A, B](
+        subject: String,
+        message: A,
+        headers: Headers,
+        duration: Duration
+    )(using
         Serializer[F, A],
         Deserializer[F, B]
     ): F[Message[B]] = for {
       bytes <- Serializer[F, A].serialize(
         subject,
-        Headers(),
+        headers,
         message
       )
       response <- Async[F].fromCompletableFuture(
@@ -91,26 +110,44 @@ object Nats {
     } yield Message[B](value, response.getSubject, response.getHeaders, None)
 
     override def subscribe[B](topic: String)(
-        handler: Function[Message[B], F[Unit]]
+        handler: Message[B] => F[Unit]
+    )(using Deserializer[F, B]): Resource[F, Unit] =
+      _subscribe[B](topic)(handler, None)
+
+    override def subscribeQueue[B](topic: String, queue: String)(
+        handler: Message[B] => F[Unit]
+    )(using Deserializer[F, B]): Resource[F, Unit] =
+      _subscribe[B](topic)(handler, Some(queue))
+
+    private def _subscribe[B](topic: String)(
+        handler: Function[Message[B], F[Unit]],
+        queue: Option[String]
     )(using
         Deserializer[F, B]
     ): Resource[F, Unit] = for {
-      queue <- Resource.eval(Queue.unbounded[F, JMessage])
+      buffer <- Resource.eval(Queue.unbounded[F, JMessage])
       effectDispatcher <- Dispatcher.sequential[F](true)
       _ <- Resource.make {
-        Async[F].delay(
-          connection
-            .createDispatcher((msg: JMessage) =>
-              effectDispatcher.unsafeRunAndForget(queue.offer(msg))
-            )
-            .subscribe(topic)
-        )
+        Async[F]
+          .delay(
+            connection
+              .createDispatcher((msg: JMessage) =>
+                effectDispatcher.unsafeRunAndForget(buffer.offer(msg))
+              )
+          )
+          .flatMap { dispatcher =>
+            queue match {
+              case Some(value) =>
+                Async[F].delay(dispatcher.subscribe(topic, value))
+              case None => Async[F].delay(dispatcher.subscribe(topic))
+            }
+          }
       } { dispatcher =>
         Async[F].blocking(connection.closeDispatcher(dispatcher))
       }
       _ <- Resource
         .make(
-          queue.take
+          buffer.take
             .flatMap(message =>
               for {
                 value <- Deserializer[F, B]
