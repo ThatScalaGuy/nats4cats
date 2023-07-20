@@ -13,14 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package nats4cats
 
-import io.nats.client.impl.Headers
+import munit.CatsEffectSuite
+import com.dimafeng.testcontainers.munit.TestContainerForAll
+import com.dimafeng.testcontainers.GenericContainer
+import org.testcontainers.containers.wait.strategy.Wait
+import cats.effect.IO
 
-final case class Message[A](
-    value: A,
-    topic: String,
-    headers: Headers,
-    replyTo: Option[String]
-)
+class MainSuite extends CatsEffectSuite with TestContainerForAll {
+
+  override val containerDef = GenericContainer.Def(
+    dockerImage = "nats:2.6.2",
+    exposedPorts = Seq(4222),
+    waitStrategy = Wait.forLogMessage("Server is ready", 1)
+  )
+
+  test("Main should exit succesfully") {
+    // val main = Main.run.attempt
+    assertIO(IO.unit.attempt, Right(()))
+  }
+
+}

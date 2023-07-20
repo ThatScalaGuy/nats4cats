@@ -1,6 +1,12 @@
 lazy val V = new {
   val Scala3 = "3.3.0"
   val Scala213 = "2.13.10"
+  val Cats = "2.9.0"
+  val CatsEffect = "3.5.0"
+  val Nats = "2.16.13"
+  val Munit = "0.7.29"
+  val MunitCatsEffect = "1.0.7"
+  val Testcontainers = "0.40.17"
 }
 
 // https://typelevel.org/sbt-typelevel/faq.html#what-is-a-base-version-anyway
@@ -30,18 +36,21 @@ ThisBuild / githubWorkflowJavaVersions := Seq(
   JavaSpec.temurin("17")
 )
 
+Test / fork := true
+
 lazy val root = tlCrossRootProject.aggregate(core)
 
 lazy val core = project
-  .in(file("core"))
+  .in(file("modules/core"))
   .settings(
     name := "nats4cats",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core" % "2.9.0",
-      "org.typelevel" %% "cats-effect" % "3.5.0",
-      "io.nats" % "jnats" % "2.16.13",
-      "org.scalameta" %% "munit" % "0.7.29" % Test,
-      "org.typelevel" %% "munit-cats-effect-3" % "1.0.7" % Test
+      "org.typelevel" %% "cats-core" % V.Cats,
+      "org.typelevel" %% "cats-effect" % V.CatsEffect,
+      "io.nats" % "jnats" % V.Nats,
+      "org.scalameta" %% "munit" % V.Munit % Test,
+      "org.typelevel" %% "munit-cats-effect-3" % V.MunitCatsEffect % Test,
+      "com.dimafeng" %% "testcontainers-scala-munit" % V.Testcontainers % Test
     )
   )
 

@@ -13,16 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package nats4cats
 
-import munit.CatsEffectSuite
+import io.nats.client.impl.Headers
 
-class MainSuite extends CatsEffectSuite {
-
-  test("Main should exit succesfully") {
-    val main = Main.run.attempt
-    assertIO(main, Right(()))
-  }
-
-}
+final case class Message[A](
+    value: A,
+    topic: String,
+    headers: Headers,
+    replyTo: Option[String]
+)
