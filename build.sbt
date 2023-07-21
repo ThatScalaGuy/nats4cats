@@ -38,7 +38,7 @@ ThisBuild / githubWorkflowJavaVersions := Seq(
 
 Test / fork := true
 
-lazy val root = tlCrossRootProject.aggregate(core)
+lazy val root = (project in file(".")).aggregate(core)
 
 lazy val core = project
   .in(file("modules/core"))
