@@ -3,6 +3,8 @@
 Small Scala cats-effect wrapper around the official [nats.java](https://github.com/nats-io/nats.java) library.
 
 ### Features
+ - Scala 3 support
+ - cats-effect 3.5 support
 
 Currently, the following features are supported:
  - Publish
@@ -26,7 +28,7 @@ Currently, the following features are supported:
 
 ### Usage
 
-This library is currently available for Scala binary and 3.
+This library is currently available for Scala3.
 
 To use the latest version, include the following in your `build.sbt`:
 

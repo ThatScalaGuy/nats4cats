@@ -47,16 +47,13 @@ object Deserializer {
         fn(topic, headers, data).attempt
       }
 
-    override def map[B](f: A => B): Deserializer[F, B] = instance {
-      (topic, headers, data) =>
-        fn(topic, headers, data).map(f)
+    override def map[B](f: A => B): Deserializer[F, B] = instance { (topic, headers, data) =>
+      fn(topic, headers, data).map(f)
     }
 
     override def flatMap[B](f: A => Deserializer[F, B]): Deserializer[F, B] =
       instance { (topic, headers, data) =>
-        fn(topic, headers, data).flatMap(a =>
-          f(a).deserialize(topic, headers, data)
-        )
+        fn(topic, headers, data).flatMap(a => f(a).deserialize(topic, headers, data))
       }
 
     override def deserialize(
@@ -65,9 +62,8 @@ object Deserializer {
         data: Array[Byte]
     ): F[A] = fn(topic, headers, data)
 
-    override def option: Deserializer[F, Option[A]] = instance {
-      (topic, headers, data) =>
-        fn(topic, headers, data).map(Some(_)).recover { case _ => None }
+    override def option: Deserializer[F, Option[A]] = instance { (topic, headers, data) =>
+      fn(topic, headers, data).map(Some(_)).recover { case _ => None }
     }
   }
 
@@ -85,5 +81,5 @@ object Deserializer {
     lift[F, String](data => Sync[F].delay(new String(data, charset)))
 
   given [F[_]: Sync]: Deserializer[F, Array[Byte]] = identity[F]
-  given [F[_]: Sync]: Deserializer[F, String] = string[F]()
+  given [F[_]: Sync]: Deserializer[F, String]      = string[F]()
 }

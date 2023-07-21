@@ -57,5 +57,5 @@ object Serializer {
     lift[F, String](data => Sync[F].delay(data.getBytes(charset)))
 
   given [F[_]: Sync]: Serializer[F, Array[Byte]] = identity[F]
-  given [F[_]: Sync]: Serializer[F, String] = string[F]()
+  given [F[_]: Sync]: Serializer[F, String]      = string[F]()
 }

@@ -48,10 +48,9 @@ object Main extends IOApp.Simple {
     _ <- nats.subscribe[String]("bar") { case Message(data, topic, _, _) =>
       IO.println(s"Received message on topic $topic: $data")
     }
-    _ <- nats.subscribe[String]("baz") {
-      case Message(data, topic, _, replyTo) =>
-        IO.println(s"Received message on topic $topic: $data") >>
-          nats.publish(replyTo.get, "Ok!!!")
+    _ <- nats.subscribe[String]("baz") { case Message(data, topic, _, replyTo) =>
+      IO.println(s"Received message on topic $topic: $data") >>
+        nats.publish(replyTo.get, "Ok!!!")
     }
     _ <- Resource.eval(inLoop(nats))
   } yield ()
