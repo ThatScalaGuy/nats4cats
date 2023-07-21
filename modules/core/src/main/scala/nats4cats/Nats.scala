@@ -159,6 +159,8 @@ class NatsClient[F[_]: Async](connection: Connection) extends Nats[F] {
 object Nats {
   import scala.jdk.DurationConverters.*
 
+  def apply[F[_]](using Nats[F]): Nats[F] = summon[Nats[F]]
+
   private lazy val defaultOptions: Options =
     new Options.Builder().server(Options.DEFAULT_URL).build();
 
