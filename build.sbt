@@ -4,8 +4,8 @@ lazy val V = new {
   val Cats = "2.9.0"
   val CatsEffect = "3.5.0"
   val Nats = "2.16.13"
-  val Munit = "0.7.29"
-  val MunitCatsEffect = "1.0.7"
+  val Munit = "1.0.0-M8"
+  val MunitCatsEffect = "2.0.0-M3"
   val Testcontainers = "0.40.17"
 }
 
@@ -37,6 +37,7 @@ ThisBuild / githubWorkflowJavaVersions := Seq(
 )
 
 Test / fork := true
+Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat
 
 lazy val root = (project in file(".")).aggregate(core)
 
@@ -49,7 +50,7 @@ lazy val core = project
       "org.typelevel" %% "cats-effect" % V.CatsEffect,
       "io.nats" % "jnats" % V.Nats,
       "org.scalameta" %% "munit" % V.Munit % Test,
-      "org.typelevel" %% "munit-cats-effect-3" % V.MunitCatsEffect % Test,
+      "org.typelevel" %% "munit-cats-effect" % V.MunitCatsEffect % Test,
       "com.dimafeng" %% "testcontainers-scala-munit" % V.Testcontainers % Test
     )
   )

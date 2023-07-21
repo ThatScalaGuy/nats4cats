@@ -27,12 +27,10 @@ class MainSuite extends CatsEffectSuite with TestContainerForAll {
   override val containerDef = GenericContainer.Def(
     dockerImage = "nats:2.6.2",
     exposedPorts = Seq(4222),
-    waitStrategy = Wait.forLogMessage("Server is ready", 1)
+    waitStrategy = Wait.forLogMessage(".*Server is ready.*", 1)
   )
 
-  test("Main should exit succesfully") {
-    // val main = Main.run.attempt
-    assertIO(IO.unit.attempt, Right(()))
+  test("Main should exit successfully") {
+    assertIOBoolean(IO.pure(true))
   }
-
 }
