@@ -1,21 +1,21 @@
 lazy val V = new {
-  val Scala3 = "3.3.0"
-  val Scala213 = "2.13.10"
-  val Cats = "2.9.0"
-  val CatsEffect = "3.5.0"
-  val Nats = "2.16.13"
-  val Munit = "1.0.0-M8"
+  val Scala3          = "3.3.0"
+  val Scala213        = "2.13.10"
+  val Cats            = "2.9.0"
+  val CatsEffect      = "3.5.0"
+  val Nats            = "2.16.13"
+  val Munit           = "1.0.0-M8"
   val MunitCatsEffect = "2.0.0-M3"
-  val Testcontainers = "0.40.17"
+  val Testcontainers  = "0.40.17"
 }
 
 // https://typelevel.org/sbt-typelevel/faq.html#what-is-a-base-version-anyway
-ThisBuild / tlBaseVersion := "0.0" // your current series x.y
+ThisBuild / tlBaseVersion := "0.1" // your current series x.y
 
-ThisBuild / organization := "de.thatscalaguy"
+ThisBuild / organization     := "de.thatscalaguy"
 ThisBuild / organizationName := "ThatScalaGuy"
-ThisBuild / startYear := Some(2023)
-ThisBuild / licenses := Seq(License.Apache2)
+ThisBuild / startYear        := Some(2023)
+ThisBuild / licenses         := Seq(License.Apache2)
 ThisBuild / developers := List(
   // your GitHub handle and name
   tlGitHubDev("ThatScalaGuy", "Sven Herrmann")
@@ -36,7 +36,7 @@ ThisBuild / githubWorkflowJavaVersions := Seq(
   JavaSpec.temurin("17")
 )
 
-Test / fork := true
+Test / fork                        := true
 Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat
 
 lazy val root = (project in file(".")).aggregate(core)
@@ -46,12 +46,12 @@ lazy val core = project
   .settings(
     name := "nats4cats",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core" % V.Cats,
-      "org.typelevel" %% "cats-effect" % V.CatsEffect,
-      "io.nats" % "jnats" % V.Nats,
-      "org.scalameta" %% "munit" % V.Munit % Test,
-      "org.typelevel" %% "munit-cats-effect" % V.MunitCatsEffect % Test,
-      "com.dimafeng" %% "testcontainers-scala-munit" % V.Testcontainers % Test
+      "org.typelevel" %% "cats-core"                  % V.Cats,
+      "org.typelevel" %% "cats-effect"                % V.CatsEffect,
+      "io.nats"        % "jnats"                      % V.Nats,
+      "org.scalameta" %% "munit"                      % V.Munit           % Test,
+      "org.typelevel" %% "munit-cats-effect"          % V.MunitCatsEffect % Test,
+      "com.dimafeng"  %% "testcontainers-scala-munit" % V.Testcontainers  % Test
     )
   )
 
