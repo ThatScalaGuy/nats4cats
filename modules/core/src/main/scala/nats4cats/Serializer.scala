@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets
 
 trait Serializer[F[_], A] {
   def serialize(topic: String, headers: Headers, data: A): F[Array[Byte]]
+  def contramap[B](f: B => A): Serializer[F, B]
 }
 
 object Serializer {
@@ -41,6 +42,10 @@ object Serializer {
         headers: Headers,
         data: A
     ): F[Array[Byte]] = fn(topic, headers, data)
+
+    override def contramap[B](f: B => A): Serializer[F, B] = instance { (topic, headers, data) =>
+      serialize(topic, headers, f(data))
+    }
   }
 
   def lift[F[_]: Sync, A](
