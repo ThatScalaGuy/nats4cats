@@ -34,7 +34,8 @@ To use the latest version, include the following in your `build.sbt`:
 
 ```scala
 libraryDependencies ++= Seq(
-  "de.thatscalaguy" %% "nats4cats" % "@VERSION@"
+  "de.thatscalaguy" %% "nats4cats" % "@VERSION@",
+  "de.thatscalaguy" %% "nats4cats-circe" % "@VERSION@" // if you want to use circe integration
 )
 ```
 
@@ -60,11 +61,28 @@ import nats4cats.Serializer.given   // including serializer for string
 import nats4cats.Deserializer.given // including deserializer for string
 
 for {
-  nats <- Nats.connectp[IO]()
+  nats <- Nats.connect[IO]()
   _    <- nats.subscribe[String]("foo") { 
             case Message(data, topic, _, _) => // Message hold data, topic, headers and replyTo(optional)
               IO.println(s"Received message on topic $topic: $data")
           }
   _    <- nats.publish[String]("foo", "Hello World!")
+} yield ()
+```
+
+### Circe integration
+
+```scala
+import nats4cats.circe.given // including circe serializer/deserializer
+import io.circe.Codec
+
+final case class Foo(bar: String) derives Codec.AsObject
+for {
+  nats <- Nats.connect[IO]()
+  _    <- nats.subscribe[Foo]("foo") { 
+            case Message(data, topic, _, _) => // Message hold data, topic, headers and replyTo(optional)
+              IO.println(s"Received message on topic $topic: $data")
+          }
+  _    <- nats.publish[Foo]("foo", Foo("Hello World!"))
 } yield ()
 ```
