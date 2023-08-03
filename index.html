@@ -93,6 +93,7 @@
           <li class="level1"><a href="#roadmap">Roadmap</a></li>
           <li class="level1"><a href="#usage">Usage</a></li>
           <li class="level1"><a href="#quickstart">Quickstart</a></li>
+          <li class="level1"><a href="#circe-integration">Circe integration</a></li>
         </ul>
 
         <p class="footer"></p>
@@ -131,8 +132,9 @@
         <p>This library is currently available for Scala3.</p>
         <p>To use the latest version, include the following in your <code>build.sbt</code>:</p>
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> ++= </span><span class="type-name">Seq</span><span>(
-  </span><span class="string-literal">&quot;de.thatscalaguy&quot;</span><span> %% </span><span class="string-literal">&quot;nats4cats&quot;</span><span> % </span><span class="string-literal">&quot;0.1.0&quot;</span><span>
-)</span></code></pre>
+  </span><span class="string-literal">&quot;de.thatscalaguy&quot;</span><span> %% </span><span class="string-literal">&quot;nats4cats&quot;</span><span> % </span><span class="string-literal">&quot;0.1.0&quot;</span><span>,
+  </span><span class="string-literal">&quot;de.thatscalaguy&quot;</span><span> %% </span><span class="string-literal">&quot;nats4cats-circe&quot;</span><span> % </span><span class="string-literal">&quot;0.1.0&quot;</span><span> </span><span class="comment">// if you want to use circe integration
+</span><span>)</span></code></pre>
         
         <h3 id="quickstart" class="section">Quickstart<a class="anchor-link right" href="#quickstart"><i class="icofont-laika">&#xef71;</i></a></h3>
         <p>1.) Add the dependency to your <code>build.sbt</code></p>
@@ -148,12 +150,26 @@
 </span><span class="keyword">import</span><span> </span><span class="identifier">nats4cats</span><span>.</span><span class="type-name">Deserializer</span><span>.</span><span class="keyword">given</span><span> </span><span class="comment">// including deserializer for string
 </span><span>
 </span><span class="keyword">for</span><span> {
-  </span><span class="identifier">nats</span><span> &lt;- </span><span class="type-name">Nats</span><span>.</span><span class="identifier">connectp</span><span>[</span><span class="type-name">IO</span><span>]()
+  </span><span class="identifier">nats</span><span> &lt;- </span><span class="type-name">Nats</span><span>.</span><span class="identifier">connect</span><span>[</span><span class="type-name">IO</span><span>]()
   </span><span class="identifier">_</span><span>    &lt;- </span><span class="identifier">nats</span><span>.</span><span class="identifier">subscribe</span><span>[</span><span class="type-name">String</span><span>](</span><span class="string-literal">&quot;foo&quot;</span><span>) { 
             </span><span class="keyword">case</span><span> </span><span class="type-name">Message</span><span>(</span><span class="identifier">data</span><span>, </span><span class="identifier">topic</span><span>, </span><span class="identifier">_</span><span>, </span><span class="identifier">_</span><span>) =&gt; </span><span class="comment">// Message hold data, topic, headers and replyTo(optional)
 </span><span>              </span><span class="type-name">IO</span><span>.</span><span class="identifier">println</span><span>(</span><span class="string-literal">s&quot;Received message on topic </span><span class="substitution">$topic</span><span class="string-literal">: </span><span class="substitution">$data</span><span class="string-literal">&quot;</span><span>)
           }
   </span><span class="identifier">_</span><span>    &lt;- </span><span class="identifier">nats</span><span>.</span><span class="identifier">publish</span><span>[</span><span class="type-name">String</span><span>](</span><span class="string-literal">&quot;foo&quot;</span><span>, </span><span class="string-literal">&quot;Hello World!&quot;</span><span>)
+} </span><span class="keyword">yield</span><span> ()</span></code></pre>
+        
+        <h3 id="circe-integration" class="section">Circe integration<a class="anchor-link right" href="#circe-integration"><i class="icofont-laika">&#xef71;</i></a></h3>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">nats4cats</span><span>.</span><span class="identifier">circe</span><span>.</span><span class="keyword">given</span><span> </span><span class="comment">// including circe serializer/deserializer
+</span><span class="keyword">import</span><span> </span><span class="identifier">io</span><span>.</span><span class="identifier">circe</span><span>.</span><span class="type-name">Codec</span><span>
+
+</span><span class="keyword">final</span><span> </span><span class="keyword">case</span><span> </span><span class="keyword">class</span><span> </span><span class="type-name">Foo</span><span>(</span><span class="identifier">bar</span><span>: </span><span class="type-name">String</span><span>) </span><span class="keyword">derives</span><span> </span><span class="type-name">Codec</span><span>.</span><span class="type-name">AsObject</span><span>
+</span><span class="keyword">for</span><span> {
+  </span><span class="identifier">nats</span><span> &lt;- </span><span class="type-name">Nats</span><span>.</span><span class="identifier">connect</span><span>[</span><span class="type-name">IO</span><span>]()
+  </span><span class="identifier">_</span><span>    &lt;- </span><span class="identifier">nats</span><span>.</span><span class="identifier">subscribe</span><span>[</span><span class="type-name">Foo</span><span>](</span><span class="string-literal">&quot;foo&quot;</span><span>) { 
+            </span><span class="keyword">case</span><span> </span><span class="type-name">Message</span><span>(</span><span class="identifier">data</span><span>, </span><span class="identifier">topic</span><span>, </span><span class="identifier">_</span><span>, </span><span class="identifier">_</span><span>) =&gt; </span><span class="comment">// Message hold data, topic, headers and replyTo(optional)
+</span><span>              </span><span class="type-name">IO</span><span>.</span><span class="identifier">println</span><span>(</span><span class="string-literal">s&quot;Received message on topic </span><span class="substitution">$topic</span><span class="string-literal">: </span><span class="substitution">$data</span><span class="string-literal">&quot;</span><span>)
+          }
+  </span><span class="identifier">_</span><span>    &lt;- </span><span class="identifier">nats</span><span>.</span><span class="identifier">publish</span><span>[</span><span class="type-name">Foo</span><span>](</span><span class="string-literal">&quot;foo&quot;</span><span>, </span><span class="type-name">Foo</span><span>(</span><span class="string-literal">&quot;Hello World!&quot;</span><span>))
 } </span><span class="keyword">yield</span><span> ()</span></code></pre>
 
         <hr style="margin-top: 30px"/>
