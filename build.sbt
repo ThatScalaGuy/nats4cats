@@ -7,10 +7,11 @@ lazy val V = new {
   val Munit           = "1.0.0-M8"
   val MunitCatsEffect = "2.0.0-M3"
   val Testcontainers  = "0.40.17"
+  val Circe           = "0.14.5"
 }
 
 // https://typelevel.org/sbt-typelevel/faq.html#what-is-a-base-version-anyway
-ThisBuild / tlBaseVersion := "0.1" // your current series x.y
+ThisBuild / tlBaseVersion := "0.2" // your current series x.y
 
 ThisBuild / organization     := "de.thatscalaguy"
 ThisBuild / organizationName := "ThatScalaGuy"
@@ -39,7 +40,7 @@ ThisBuild / githubWorkflowJavaVersions := Seq(
 Test / fork                        := true
 Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat
 
-lazy val root = (project in file(".")).aggregate(core)
+lazy val root = (project in file(".")).aggregate(core, circe)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -54,5 +55,19 @@ lazy val core = project
       "com.dimafeng"  %% "testcontainers-scala-munit" % V.Testcontainers  % Test
     )
   )
+
+lazy val circe = project
+  .in(file("modules/circe"))
+  .settings(
+    name := "nats4cats-circe",
+    libraryDependencies ++= Seq(
+      "io.circe"      %% "circe-core"                 % V.Circe,
+      "io.circe"      %% "circe-parser"               % V.Circe,
+      "org.scalameta" %% "munit"                      % V.Munit           % Test,
+      "org.typelevel" %% "munit-cats-effect"          % V.MunitCatsEffect % Test,
+      "com.dimafeng"  %% "testcontainers-scala-munit" % V.Testcontainers  % Test
+    )
+  )
+  .dependsOn(core)
 
 lazy val docs = project.in(file("site")).enablePlugins(TypelevelSitePlugin)

@@ -27,6 +27,7 @@ import nats4cats.Deserializer
 
 trait Deserializer[F[_], A] {
   def deserialize(topic: String, headers: Headers, data: Array[Byte]): F[A]
+  def evalMap[B](f: A => F[B]): Deserializer[F, B]
   def map[B](f: A => B): Deserializer[F, B]
   def flatMap[B](f: A => Deserializer[F, B]): Deserializer[F, B]
   def attempt: Deserializer[F, Either[Throwable, A]]
@@ -46,6 +47,10 @@ object Deserializer {
       instance { (topic, headers, data) =>
         fn(topic, headers, data).attempt
       }
+
+    override def evalMap[B](f: A => F[B]): Deserializer[F, B] = instance { (topic, headers, data) =>
+      fn(topic, headers, data).flatMap(f)
+    }
 
     override def map[B](f: A => B): Deserializer[F, B] = instance { (topic, headers, data) =>
       fn(topic, headers, data).map(f)
