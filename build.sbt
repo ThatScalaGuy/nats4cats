@@ -40,7 +40,9 @@ ThisBuild / githubWorkflowJavaVersions := Seq(
 Test / fork                        := true
 Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat
 
-lazy val root = (project in file(".")).aggregate(core, circe)
+lazy val root = (project in file("."))
+  .enablePlugins(NoPublishPlugin)
+  .aggregate(core, circe)
 
 lazy val core = project
   .in(file("modules/core"))
