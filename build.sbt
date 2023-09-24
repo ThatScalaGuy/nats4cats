@@ -1,10 +1,10 @@
 lazy val V = new {
   val Scala3          = "3.3.0"
   val Scala213        = "2.13.10"
-  val Cats            = "2.9.0"
+  val Cats            = "2.10.0"
   val CatsEffect      = "3.5.1"
   val Nats            = "2.16.13"
-  val Munit           = "1.0.0-M8"
+  val Munit           = "1.0.0-M10"
   val MunitCatsEffect = "2.0.0-M3"
   val Testcontainers  = "0.40.17"
   val Circe           = "0.14.5"
