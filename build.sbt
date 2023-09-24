@@ -7,7 +7,7 @@ lazy val V = new {
   val Munit           = "1.0.0-M10"
   val MunitCatsEffect = "2.0.0-M3"
   val Testcontainers  = "0.41.0"
-  val Circe           = "0.14.5"
+  val Circe           = "0.14.6"
 }
 
 // https://typelevel.org/sbt-typelevel/faq.html#what-is-a-base-version-anyway
