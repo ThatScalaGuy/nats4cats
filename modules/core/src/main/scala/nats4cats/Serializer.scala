@@ -17,10 +17,7 @@
 package nats4cats
 
 import io.nats.client.impl.Headers
-import cats.Applicative
-import cats.implicits.*
 import cats.effect.kernel.Sync
-import cats.instances.char
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 

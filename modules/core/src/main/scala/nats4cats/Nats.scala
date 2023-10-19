@@ -20,10 +20,7 @@ import cats.effect.kernel.Resource
 import io.nats.client.{Nats => JNats, Options, Message => JMessage}
 import cats.effect.kernel.Sync
 import cats.effect.kernel.Async
-import cats.effect.IO
 import cats.implicits.*
-import cats.effect.syntax.dispatcher
-import cats.evidence.As
 import cats.effect.std.Queue
 import cats.effect.implicits.*
 import cats.effect.std.Dispatcher
