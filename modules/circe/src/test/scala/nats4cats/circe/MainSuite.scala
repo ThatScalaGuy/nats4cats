@@ -16,16 +16,17 @@
 
 package nats4cats.circe
 
-import munit.CatsEffectSuite
-import com.dimafeng.testcontainers.munit.TestContainerForAll
-import com.dimafeng.testcontainers.GenericContainer
-import org.testcontainers.containers.wait.strategy.Wait
 import cats.effect.IO
 import cats.effect.kernel.Resource
+
 import nats4cats.*
 import nats4cats.circe.given
-import io.circe.Json
-import io.circe.Codec
+
+import com.dimafeng.testcontainers.GenericContainer
+import com.dimafeng.testcontainers.munit.TestContainerForAll
+import io.circe.{Codec, Json}
+import munit.CatsEffectSuite
+import org.testcontainers.containers.wait.strategy.Wait
 
 class MainSuite extends CatsEffectSuite with TestContainerForAll {
 

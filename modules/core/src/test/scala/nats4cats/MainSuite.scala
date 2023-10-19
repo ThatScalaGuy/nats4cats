@@ -16,12 +16,13 @@
 
 package nats4cats
 
-import munit.CatsEffectSuite
-import com.dimafeng.testcontainers.munit.TestContainerForAll
-import com.dimafeng.testcontainers.GenericContainer
-import org.testcontainers.containers.wait.strategy.Wait
 import cats.effect.IO
 import cats.effect.kernel.Resource
+
+import com.dimafeng.testcontainers.GenericContainer
+import com.dimafeng.testcontainers.munit.TestContainerForAll
+import munit.CatsEffectSuite
+import org.testcontainers.containers.wait.strategy.Wait
 
 class MainSuite extends CatsEffectSuite with TestContainerForAll {
 

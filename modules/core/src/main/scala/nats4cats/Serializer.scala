@@ -16,10 +16,11 @@
 
 package nats4cats
 
-import io.nats.client.impl.Headers
 import cats.effect.kernel.Sync
-import java.nio.charset.Charset
-import java.nio.charset.StandardCharsets
+
+import io.nats.client.impl.Headers
+
+import java.nio.charset.{Charset, StandardCharsets}
 
 trait Serializer[F[_], A] {
   def serialize(topic: String, headers: Headers, data: A): F[Array[Byte]]

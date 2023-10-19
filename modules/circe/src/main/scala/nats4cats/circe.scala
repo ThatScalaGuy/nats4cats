@@ -17,9 +17,11 @@
 package nats4cats.circe
 
 import cats.effect.kernel.Sync
+
 import nats4cats.{Deserializer, Serializer}
-import io.circe.{Json, Encoder, Decoder}
+
 import io.circe.parser.parse
+import io.circe.{Decoder, Encoder, Json}
 
 given [F[_]: Sync]: Deserializer[F, Json] =
   Deserializer.string().map(parse(_).fold(throw _, identity))

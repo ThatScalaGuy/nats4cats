@@ -16,16 +16,15 @@
 
 package nats4cats
 
-import cats.effect.kernel.Resource
-import io.nats.client.{Nats => JNats, Options, Message => JMessage}
-import cats.effect.kernel.Sync
-import cats.effect.kernel.Async
 import cats.implicits.*
-import cats.effect.std.Queue
+
 import cats.effect.implicits.*
-import cats.effect.std.Dispatcher
+import cats.effect.kernel.{Async, Resource, Sync}
+import cats.effect.std.{Dispatcher, Queue}
+
 import io.nats.client.impl.Headers
-import io.nats.client.Connection
+import io.nats.client.{Connection, Message => JMessage, Nats => JNats, Options}
+
 import scala.concurrent.duration.*
 
 trait Nats[F[_]] {
