@@ -34,7 +34,8 @@ ThisBuild / scalaVersion := V.Scala3 // the default Scala
 ThisBuild / githubWorkflowJavaVersions := Seq(
   JavaSpec.temurin("8"),
   JavaSpec.temurin("11"),
-  JavaSpec.temurin("17")
+  JavaSpec.temurin("17"),
+  JavaSpec.temurin("21")
 )
 
 Test / fork                        := true
