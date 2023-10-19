@@ -6,8 +6,8 @@ lazy val V = new {
   val Nats            = "2.16.14"
   val Munit           = "1.0.0-M10"
   val MunitCatsEffect = "2.0.0-M3"
-  val Testcontainers  = "0.40.17"
-  val Circe           = "0.14.5"
+  val Testcontainers  = "0.41.0"
+  val Circe           = "0.14.6"
 }
 
 // https://typelevel.org/sbt-typelevel/faq.html#what-is-a-base-version-anyway
@@ -34,7 +34,8 @@ ThisBuild / scalaVersion := V.Scala3 // the default Scala
 ThisBuild / githubWorkflowJavaVersions := Seq(
   JavaSpec.temurin("8"),
   JavaSpec.temurin("11"),
-  JavaSpec.temurin("17")
+  JavaSpec.temurin("17"),
+  JavaSpec.temurin("21")
 )
 
 Test / fork                        := true

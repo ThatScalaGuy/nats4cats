@@ -16,14 +16,12 @@
 
 package nats4cats
 
-import io.nats.client.impl.Headers
-import cats.Applicative
-import cats.implicits.*
 import cats.effect.kernel.Sync
-import cats.instances.char
+import cats.implicits.*
+import io.nats.client.impl.Headers
+
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
-import nats4cats.Deserializer
 
 trait Deserializer[F[_], A] {
   def deserialize(topic: String, headers: Headers, data: Array[Byte]): F[A]
