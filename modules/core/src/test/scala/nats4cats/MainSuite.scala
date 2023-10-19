@@ -26,7 +26,7 @@ import cats.effect.kernel.Resource
 class MainSuite extends CatsEffectSuite with TestContainerForAll {
 
   override val containerDef = GenericContainer.Def(
-    dockerImage = "nats:2.6.2",
+    dockerImage = "nats:2.10.3",
     exposedPorts = Seq(4222),
     waitStrategy = Wait.forLogMessage(".*Server is ready.*", 1)
   )
