@@ -75,6 +75,9 @@ lazy val circe = project
 
 lazy val service = project
   .in(file("modules/service"))
+  .settings(
+    name := "nats4cats-service"
+  )
   .dependsOn(core)
 
 lazy val docs = project
