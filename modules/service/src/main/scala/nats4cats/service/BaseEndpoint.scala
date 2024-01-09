@@ -16,18 +16,18 @@
 
 package nats4cats.service
 
-import io.nats.service.*
-import scala.jdk.CollectionConverters.*
-import nats4cats.Deserializer
-import cats.effect.kernel.Resource
-import cats.effect.std.{Dispatcher, Queue}
-import cats.effect.kernel.Async
-import cats.effect.implicits.*
-import nats4cats.Serializer
 import cats.implicits.*
-import nats4cats.Nats
-import nats4cats.NatsClient
+
+import cats.effect.implicits.*
+import cats.effect.kernel.{Async, Resource}
+import cats.effect.std.{Dispatcher, Queue}
+
+import nats4cats.{Deserializer, Nats, NatsClient, Serializer}
+
 import io.nats.client.Connection
+import io.nats.service.*
+
+import scala.jdk.CollectionConverters.*
 
 abstract class BaseEndpoint[F[_]: Async: Nats, I, O](using Deserializer[F, I], Serializer[F, O]) {
   def name: String

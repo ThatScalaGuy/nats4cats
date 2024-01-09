@@ -17,6 +17,7 @@
 package nats4cats
 
 import cats.effect.kernel.Sync
+
 import io.nats.client.impl.Headers
 
 object syntax {

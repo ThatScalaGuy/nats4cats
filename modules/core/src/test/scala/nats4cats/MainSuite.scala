@@ -16,10 +16,10 @@
 
 package nats4cats
 
-import nats4cats.syntax.*
-
 import cats.effect.IO
 import cats.effect.kernel.Resource
+
+import nats4cats.syntax.*
 
 import com.dimafeng.testcontainers.GenericContainer
 import com.dimafeng.testcontainers.munit.TestContainerForAll

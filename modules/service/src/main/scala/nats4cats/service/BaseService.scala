@@ -16,12 +16,13 @@
 
 package nats4cats.service
 
-import nats4cats.Nats
-import cats.effect.kernel.Async
-import cats.effect.kernel.Resource
-import nats4cats.NatsClient
-import cats.effect.implicits.*
 import cats.implicits.*
+
+import cats.effect.implicits.*
+import cats.effect.kernel.{Async, Resource}
+
+import nats4cats.{Nats, NatsClient}
+
 import io.nats.service.ServiceBuilder
 
 abstract class BaseService[F[_]: Async](using Nats[F]) {
