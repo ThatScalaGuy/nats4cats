@@ -11,7 +11,7 @@ lazy val V = new {
 }
 
 // https://typelevel.org/sbt-typelevel/faq.html#what-is-a-base-version-anyway
-ThisBuild / tlBaseVersion := "0.2" // your current series x.y
+ThisBuild / tlBaseVersion := "0.3" // your current series x.y
 
 ThisBuild / organization     := "de.thatscalaguy"
 ThisBuild / organizationName := "ThatScalaGuy"
@@ -43,7 +43,7 @@ Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat
 
 lazy val root = (project in file("."))
   .enablePlugins(NoPublishPlugin)
-  .aggregate(core, circe)
+  .aggregate(core, circe, service)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -73,4 +73,18 @@ lazy val circe = project
   )
   .dependsOn(core)
 
-lazy val docs = project.in(file("site")).enablePlugins(TypelevelSitePlugin)
+lazy val service = project
+  .in(file("modules/service"))
+  .dependsOn(core)
+
+lazy val docs = project
+  .in(file("site"))
+  .enablePlugins(TypelevelSitePlugin)
+  .settings(tlSiteHelium ~= {
+    import laika.helium.config._
+    import laika.ast.Path.Root
+    _.site
+      .topNavigationBar(
+        homeLink = IconLink.internal(Root / "index.md", HeliumIcon.home)
+      )
+  })
