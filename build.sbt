@@ -11,7 +11,7 @@ lazy val V = new {
 }
 
 // https://typelevel.org/sbt-typelevel/faq.html#what-is-a-base-version-anyway
-ThisBuild / tlBaseVersion := "0.2" // your current series x.y
+ThisBuild / tlBaseVersion := "0.3" // your current series x.y
 
 ThisBuild / organization     := "de.thatscalaguy"
 ThisBuild / organizationName := "ThatScalaGuy"
