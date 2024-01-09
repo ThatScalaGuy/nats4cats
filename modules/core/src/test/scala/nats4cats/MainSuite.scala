@@ -16,6 +16,8 @@
 
 package nats4cats
 
+import nats4cats.syntax.*
+
 import cats.effect.IO
 import cats.effect.kernel.Resource
 
@@ -60,13 +62,13 @@ class MainSuite extends CatsEffectSuite with TestContainerForAll {
   test("Request") {
     withContainers { case natsServer: GenericContainer =>
       for {
-        nats <- Nats.connectHosts[IO](
+        given Nats[IO] <- Nats.connectHosts[IO](
           s"nats://localhost:${natsServer.container.getMappedPort(4222)}"
         )
-        _ <- nats.subscribe[String]("test") { msg =>
-          nats.publish(msg.replyTo.get, msg.value + "!")
+        _ <- Nats[IO].subscribe[String]("test") { msg =>
+          msg.reply(msg.value + "!")
         }
-        value <- Resource.eval(nats.request[String, String]("test", "Hello World!"))
+        value <- Resource.eval(Nats[IO].request[String, String]("test", "Hello World!"))
       } yield value.value
     }.use(value => IO.pure(value == "Hello World!!")).assert
   }

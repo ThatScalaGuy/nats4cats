@@ -43,7 +43,7 @@ Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat
 
 lazy val root = (project in file("."))
   .enablePlugins(NoPublishPlugin)
-  .aggregate(core, circe)
+  .aggregate(core, circe, service)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -73,4 +73,13 @@ lazy val circe = project
   )
   .dependsOn(core)
 
-lazy val docs = project.in(file("site")).enablePlugins(TypelevelSitePlugin)
+lazy val service = project
+  .in(file("modules/service"))
+  .dependsOn(core)
+
+lazy val docs = project
+  .in(file("site"))
+  .enablePlugins(TypelevelSitePlugin)
+  .settings(
+    tlFatalWarnings := false
+  )

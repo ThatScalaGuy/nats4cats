@@ -55,7 +55,8 @@ trait Nats[F[_]] {
   ): Resource[F, Unit]
 }
 
-class NatsClient[F[_]: Async](connection: Connection) extends Nats[F] {
+class NatsClient[F[_]: Async] private[nats4cats] (connection: Connection) extends Nats[F] {
+  private[nats4cats] val underlying: Connection = connection
   override def publish[A](subject: String, message: A, headers: Headers)(using
       Serializer[F, A]
   ): F[Unit] = for {
@@ -108,7 +109,7 @@ class NatsClient[F[_]: Async](connection: Connection) extends Nats[F] {
       Deserializer[F, B]
   ): Resource[F, Unit] = for {
     buffer           <- Resource.eval(Queue.unbounded[F, JMessage])
-    effectDispatcher <- Dispatcher.sequential[F](true)
+    effectDispatcher <- Dispatcher.parallel[F](true)
     _ <- Resource.make {
       Async[F]
         .delay(
