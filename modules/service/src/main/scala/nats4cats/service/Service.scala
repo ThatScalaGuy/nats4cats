@@ -87,19 +87,3 @@ abstract class Service[F[_]: Async: Nats: Dispatcher](name: String, version: Str
       builder.endpointQueueGroup(value)
   }
 }
-
-final class TestService[F[_]: Async: Nats: Dispatcher] extends Service[F]("test", "1.0.0") {
-  import syntax.*
-
-  description("test service")
-
-  namespace("test") {
-    endpoint[String, String]("test2") ~ subject("test2") ~ queue("test") -> {
-      case "test" =>
-        Async[F].pure("test")
-      case "aaaa" =>
-        Async[F].pure("aaaa")
-    }
-  }
-
-}
