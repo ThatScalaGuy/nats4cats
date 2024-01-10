@@ -167,48 +167,7 @@
         
         <h3 id="service-implementation" class="section"><a class="anchor-link left" href="#service-implementation"><i class="icofont-laika link">&#xef71;</i></a>Service implementation</h3>
         <p>This feature is currently experimental and might change in the future.</p>
-        <pre><code class="nohighlight"><span class="keyword">package</span><span> </span><span class="identifier">nats4cats</span><span>
-</span><span class="keyword">package</span><span> </span><span class="identifier">service</span><span>
-
-</span><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="type-name">IOApp</span><span>
-</span><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="type-name">IO</span><span>
-</span><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="identifier">kernel</span><span>.</span><span class="type-name">Resource</span><span>
-</span><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="identifier">kernel</span><span>.</span><span class="type-name">Async</span><span>
-
-</span><span class="keyword">object</span><span> </span><span class="type-name">Main</span><span> </span><span class="keyword">extends</span><span> </span><span class="type-name">IOApp</span><span>.</span><span class="type-name">Simple</span><span> {
-
-  </span><span class="keyword">def</span><span> </span><span class="declaration-name">application</span><span>: </span><span class="type-name">Resource</span><span>[</span><span class="type-name">IO</span><span>, </span><span class="type-name">Unit</span><span>] = </span><span class="keyword">for</span><span> {
-    </span><span class="keyword">given</span><span> </span><span class="type-name">Nats</span><span>[</span><span class="type-name">IO</span><span>] &lt;- </span><span class="type-name">Nats</span><span>.</span><span class="identifier">connectHosts</span><span>[</span><span class="type-name">IO</span><span>](</span><span class="string-literal">&quot;nats://localhost:4222&quot;</span><span>)
-    </span><span class="identifier">_</span><span>              &lt;- </span><span class="type-name">MainService</span><span>[</span><span class="type-name">IO</span><span>].</span><span class="identifier">run</span><span>()
-  } </span><span class="keyword">yield</span><span> ()
-  </span><span class="keyword">def</span><span> </span><span class="declaration-name">run</span><span>: </span><span class="type-name">IO</span><span>[</span><span class="type-name">Unit</span><span>] = </span><span class="identifier">application</span><span>.</span><span class="identifier">useForever</span><span>.</span><span class="identifier">void</span><span>
-}
-
-</span><span class="keyword">class</span><span> </span><span class="type-name">MainService</span><span>[</span><span class="type-name">F</span><span>[</span><span class="identifier">_</span><span>]: </span><span class="type-name">Async</span><span>](</span><span class="keyword">using</span><span> </span><span class="type-name">Nats</span><span>[</span><span class="type-name">F</span><span>]) </span><span class="keyword">extends</span><span> </span><span class="type-name">BaseService</span><span>[</span><span class="type-name">F</span><span>] {
-  </span><span class="keyword">override</span><span> </span><span class="keyword">def</span><span> </span><span class="declaration-name">name</span><span>: </span><span class="type-name">String</span><span>        = </span><span class="string-literal">&quot;test&quot;</span><span>
-  </span><span class="keyword">override</span><span> </span><span class="keyword">def</span><span> </span><span class="declaration-name">description</span><span>: </span><span class="type-name">String</span><span> = </span><span class="string-literal">&quot;test&quot;</span><span>
-  </span><span class="keyword">override</span><span> </span><span class="keyword">def</span><span> </span><span class="declaration-name">version</span><span>: </span><span class="type-name">String</span><span>     = </span><span class="string-literal">&quot;0.0.1&quot;</span><span>
-  </span><span class="keyword">override</span><span> </span><span class="keyword">def</span><span> </span><span class="declaration-name">endpoints</span><span>: </span><span class="type-name">List</span><span>[</span><span class="type-name">BaseEndpoint</span><span>[</span><span class="type-name">F</span><span>, ?, ?]] =
-    </span><span class="type-name">List</span><span>(</span><span class="keyword">new</span><span> </span><span class="type-name">EchoEndpoint</span><span>[</span><span class="type-name">F</span><span>], </span><span class="keyword">new</span><span> </span><span class="type-name">PingEndpoint</span><span>[</span><span class="type-name">F</span><span>])
-}
-
-</span><span class="keyword">trait</span><span> </span><span class="type-name">TestGroup</span><span> {
-  </span><span class="keyword">def</span><span> </span><span class="declaration-name">group</span><span>: </span><span class="type-name">String</span><span> = </span><span class="string-literal">&quot;example&quot;</span><span>
-}
-
-</span><span class="keyword">class</span><span> </span><span class="type-name">EchoEndpoint</span><span>[</span><span class="type-name">F</span><span>[</span><span class="identifier">_</span><span>]: </span><span class="type-name">Async</span><span>: </span><span class="type-name">Nats</span><span>] </span><span class="keyword">extends</span><span> </span><span class="type-name">BaseEndpoint</span><span>[</span><span class="type-name">F</span><span>, </span><span class="type-name">String</span><span>, </span><span class="type-name">String</span><span>] </span><span class="keyword">with</span><span> </span><span class="type-name">TestGroup</span><span> {
-  </span><span class="keyword">override</span><span> </span><span class="keyword">def</span><span> </span><span class="declaration-name">name</span><span>: </span><span class="type-name">String</span><span> = </span><span class="string-literal">&quot;echo&quot;</span><span>
-  </span><span class="keyword">override</span><span> </span><span class="keyword">def</span><span> </span><span class="declaration-name">receive</span><span>: </span><span class="type-name">PartialFunction</span><span>[</span><span class="type-name">String</span><span>, </span><span class="type-name">F</span><span>[</span><span class="type-name">String</span><span>]] = { </span><span class="keyword">case</span><span> </span><span class="identifier">str</span><span> =&gt;
-    </span><span class="type-name">Async</span><span>[</span><span class="type-name">F</span><span>].</span><span class="identifier">pure</span><span>(</span><span class="identifier">str</span><span>)
-  }
-}
-
-</span><span class="keyword">class</span><span> </span><span class="type-name">PingEndpoint</span><span>[</span><span class="type-name">F</span><span>[</span><span class="identifier">_</span><span>]: </span><span class="type-name">Async</span><span>: </span><span class="type-name">Nats</span><span>] </span><span class="keyword">extends</span><span> </span><span class="type-name">BaseEndpoint</span><span>[</span><span class="type-name">F</span><span>, </span><span class="type-name">String</span><span>, </span><span class="type-name">String</span><span>] </span><span class="keyword">with</span><span> </span><span class="type-name">TestGroup</span><span> {
-  </span><span class="keyword">override</span><span> </span><span class="keyword">def</span><span> </span><span class="declaration-name">name</span><span>: </span><span class="type-name">String</span><span> = </span><span class="string-literal">&quot;ping&quot;</span><span>
-  </span><span class="keyword">override</span><span> </span><span class="keyword">def</span><span> </span><span class="declaration-name">receive</span><span>: </span><span class="type-name">PartialFunction</span><span>[</span><span class="type-name">String</span><span>, </span><span class="type-name">F</span><span>[</span><span class="type-name">String</span><span>]] = { </span><span class="keyword">case</span><span> </span><span class="string-literal">&quot;ping&quot;</span><span> =&gt;
-    </span><span class="type-name">Async</span><span>[</span><span class="type-name">F</span><span>].</span><span class="identifier">pure</span><span>(</span><span class="string-literal">&quot;pong&quot;</span><span>)
-  }
-}</span></code></pre>
+        <p>See the example project for a full example.</p>
 
         
 <hr class="footer-rule"/>
