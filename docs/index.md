@@ -92,47 +92,4 @@ for {
 
 This feature is currently experimental and might change in the future.
 
-```scala
-package nats4cats
-package service
-
-import cats.effect.IOApp
-import cats.effect.IO
-import cats.effect.kernel.Resource
-import cats.effect.kernel.Async
-
-object Main extends IOApp.Simple {
-
-  def application: Resource[IO, Unit] = for {
-    given Nats[IO] <- Nats.connectHosts[IO]("nats://localhost:4222")
-    _              <- MainService[IO].run()
-  } yield ()
-  def run: IO[Unit] = application.useForever.void
-}
-
-class MainService[F[_]: Async](using Nats[F]) extends BaseService[F] {
-  override def name: String        = "test"
-  override def description: String = "test"
-  override def version: String     = "0.0.1"
-  override def endpoints: List[BaseEndpoint[F, ?, ?]] =
-    List(new EchoEndpoint[F], new PingEndpoint[F])
-}
-
-trait TestGroup {
-  def group: String = "example"
-}
-
-class EchoEndpoint[F[_]: Async: Nats] extends BaseEndpoint[F, String, String] with TestGroup {
-  override def name: String = "echo"
-  override def receive: PartialFunction[String, F[String]] = { case str =>
-    Async[F].pure(str)
-  }
-}
-
-class PingEndpoint[F[_]: Async: Nats] extends BaseEndpoint[F, String, String] with TestGroup {
-  override def name: String = "ping"
-  override def receive: PartialFunction[String, F[String]] = { case "ping" =>
-    Async[F].pure("pong")
-  }
-}
-```
+See the example project for a full example.

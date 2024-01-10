@@ -43,7 +43,7 @@ Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat
 
 lazy val root = (project in file("."))
   .enablePlugins(NoPublishPlugin)
-  .aggregate(core, circe, service)
+  .aggregate(core, circe, service, examples)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -79,6 +79,14 @@ lazy val service = project
     name := "nats4cats-service"
   )
   .dependsOn(core)
+
+lazy val examples = project
+  .in(file("modules/examples"))
+  .enablePlugins(NoPublishPlugin)
+  .settings(
+    name := "nats4cats-examples"
+  )
+  .dependsOn(core, service)
 
 lazy val docs = project
   .in(file("site"))
