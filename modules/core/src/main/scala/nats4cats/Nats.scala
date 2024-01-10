@@ -36,7 +36,7 @@ trait Nats[F[_]] {
       subject: String,
       value: A,
       headers: Headers = Headers(),
-      duration: Duration = Duration.Inf
+      duration: Duration = Duration(30, java.util.concurrent.TimeUnit.SECONDS)
   )(using
       Serializer[F, A],
       Deserializer[F, B]
@@ -83,7 +83,10 @@ class NatsClient[F[_]: Async] private[nats4cats] (connection: Connection) extend
       message
     )
     response <- Async[F].fromCompletableFuture(
-      Async[F].delay(connection.request(subject, bytes))
+      Async[F].delay(
+        connection
+          .requestWithTimeout(subject, headers, bytes, java.time.Duration.ofNanos(duration.toNanos))
+      )
     )
     value <- Deserializer[F, B].deserialize(
       response.getSubject(),
