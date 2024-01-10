@@ -49,7 +49,7 @@ class EchoService[F[_]: Async: Nats: Dispatcher: Console]
 class PingService[F[_]: Async: Nats: Dispatcher] extends Service[F]("PingService", "1.0.0") {
   import syntax.*
   namespace("test") {
-    endpoint[String, String]("ping") -> {
+    endpoint[String, String]("ping") ~ metadata(Map("test" -> "123")) -> {
       case "ping" =>
         Async[F].pure("pong")
       case _ => Async[F].raiseError(new Exception("invalid message"))

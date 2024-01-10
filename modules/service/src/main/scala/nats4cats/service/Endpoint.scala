@@ -33,15 +33,21 @@ class Endpoint[F[_]: Async: Dispatcher, I, O](name: String)(using
 ) {
   private[this] val builder = ServiceEndpoint.builder().endpointName(name)
   private[this] var bodyOpt: Option[(Headers, I) => F[Either[Throwable, O]]] = None
+  private[service] val metadata = collection.mutable.Map.empty[String, String]
 
   /** Apply a builder action to the endpoint
     *
     * @param action
     * @return
     */
-  def ~(action: BuildAction): Endpoint[F, I, O] = {
-    action.applyTo(builder)
-    this
+  def ~(ext: Extension): Endpoint[F, I, O] = {
+    ext match {
+      case action: EndpointExtension => action.applyTo(this)
+      case action: BuilderExtension => {
+        action.applyTo(builder)
+        this
+      }
+    }
   }
 
   /** Set the handler for the endpoint
@@ -98,6 +104,7 @@ class Endpoint[F[_]: Async: Dispatcher, I, O](name: String)(using
     }
 
   protected[service] def build(connection: Connection): ServiceEndpoint = {
+    import scala.jdk.CollectionConverters.*
     bodyOpt.foreach(body => {
       val f = handlerF(body, connection)
       builder.handler((message) => {
@@ -106,6 +113,8 @@ class Endpoint[F[_]: Async: Dispatcher, I, O](name: String)(using
         )
       })
     })
+
+    builder.endpointMetadata(metadata.asJava)
     builder.build()
   }
 }

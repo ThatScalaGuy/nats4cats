@@ -70,20 +70,29 @@ abstract class Service[F[_]: Async: Nats: Dispatcher](name: String, version: Str
       entry
   }
 
-  final case class group(value: Option[Group]) extends BuildAction {
+  final case class group(value: Option[Group]) extends BuilderExtension {
     def applyTo(builder: ServiceEndpoint.Builder): ServiceEndpoint.Builder = value match {
       case Some(group) => builder.group(group)
       case None        => builder
     }
   }
 
-  final case class subject(value: String) extends BuildAction {
+  final case class subject(value: String) extends BuilderExtension {
     def applyTo(builder: ServiceEndpoint.Builder): ServiceEndpoint.Builder =
       builder.endpointSubject(value)
   }
 
-  final case class queue(value: String) extends BuildAction {
+  final case class queue(value: String) extends BuilderExtension {
     def applyTo(builder: ServiceEndpoint.Builder): ServiceEndpoint.Builder =
       builder.endpointQueueGroup(value)
+  }
+
+  final case class metadata(value: Map[String, String]) extends EndpointExtension {
+
+    override def applyTo[F[_$1], I, O](endpoint: Endpoint[F, I, O]): Endpoint[F, I, O] = {
+      endpoint.metadata.addAll(value)
+      endpoint
+    }
+
   }
 }

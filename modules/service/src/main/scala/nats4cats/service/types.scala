@@ -18,7 +18,11 @@ package nats4cats.service
 
 import io.nats.service.{Group, ServiceEndpoint}
 
-trait BuildAction {
+trait Extension
+trait EndpointExtension extends Extension {
+  def applyTo[F[_], I, O](endpoint: Endpoint[F[_], I, O]): Endpoint[F[_], I, O]
+}
+trait BuilderExtension extends Extension {
   def applyTo(builder: ServiceEndpoint.Builder): ServiceEndpoint.Builder
 }
 
