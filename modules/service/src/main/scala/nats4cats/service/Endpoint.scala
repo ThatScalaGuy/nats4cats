@@ -24,27 +24,58 @@ import cats.effect.std.Dispatcher
 import nats4cats.{Deserializer, Serializer}
 
 import io.nats.client.Connection
+import io.nats.client.impl.Headers
 import io.nats.service.{ServiceEndpoint, ServiceMessage}
 
 class Endpoint[F[_]: Async: Dispatcher, I, O](name: String)(using
     Deserializer[F, I],
     Serializer[F, O]
 ) {
-  private[this] val builder                    = ServiceEndpoint.builder().endpointName(name)
-  private[this] var bodyOpt: Option[I => F[O]] = None
+  private[this] val builder = ServiceEndpoint.builder().endpointName(name)
+  private[this] var bodyOpt: Option[(Headers, I) => F[Either[Throwable, O]]] = None
 
+  /** Apply a builder action to the endpoint
+    *
+    * @param action
+    * @return
+    */
   def ~(action: BuildAction): Endpoint[F, I, O] = {
     action.applyTo(builder)
     this
   }
 
-  def ->(body: I => F[O]): Unit = bodyOpt = Some(body)
+  /** Set the handler for the endpoint
+    *
+    * @param body
+    */
+  def ->(body: I => F[O]): Unit = bodyOpt = Some((_, i) => body(i).attempt)
 
-  private def handlerF(body: I => F[O], connection: Connection)(message: ServiceMessage): F[Unit] =
+  /** Set the handler with headers for the endpoint
+    *
+    * @param body
+    */
+  def -->(body: (Headers, I) => F[O]): Unit = bodyOpt = Some((h, i) => body(h, i).attempt)
+
+  /** Set the handler for the endpoint
+    *
+    * @param body
+    */
+  def @>(body: I => F[Either[Throwable, O]]): Unit = bodyOpt = Some((_, i) => body(i))
+
+  /** Set the handler with headers for the endpoint
+    *
+    * @param body
+    */
+  def @@>(body: (Headers, I) => F[Either[Throwable, O]]): Unit =
+    bodyOpt = Some((h, i) => body(h, i))
+
+  private def handlerF(body: (Headers, I) => F[Either[Throwable, O]], connection: Connection)(
+      message: ServiceMessage
+  ): F[Unit] =
     (for {
       data <- Deserializer[F, I]
         .deserialize(message.getSubject(), message.getHeaders(), message.getData())
-      result <- body.apply(data)
+      result <- body.apply(message.getHeaders(), data).rethrow
       // allow handling for messages without replyTo
       _ <- Async[F].pure(Option(message.getReplyTo())).recover(_ => None).flatMap {
         case Some(replyTo) =>
