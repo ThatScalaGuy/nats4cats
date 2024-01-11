@@ -28,6 +28,8 @@ import io.nats.client.impl.Headers
 import io.nats.service.{Group, ServiceEndpoint, ServiceMessage}
 import org.typelevel.otel4s.trace.{SpanKind, Status, Tracer}
 
+import otel4s.given
+
 final case class Endpoint[F[_]: Async, I, O](
     name: String,
     group: Option[Group] = None,
@@ -67,40 +69,43 @@ final case class Endpoint[F[_]: Async, I, O](
   private[this] def handlerF(
       body: (Headers, I) => F[Either[Throwable, O]],
       connection: Connection
-  )(message: ServiceMessage)(using Tracer[F]): F[Unit] = Tracer[F]
-    .spanBuilder(message.getSubject())
-    .withSpanKind(SpanKind.Server)
-    .build
-    .use { span =>
-      (for {
-        data <- Deserializer[F, I]
-          .deserialize(message.getSubject(), message.getHeaders(), message.getData())
-        result <- Tracer[F].span("execute_handler").surround(body.apply(message.getHeaders(), data)).rethrow
-        // allow handling for messages without replyTo
-        _ <- Async[F].pure(Option(message.getReplyTo())).recover(_ => None).flatMap {
-          case Some(replyTo) =>
-            for {
-              resultData <- Serializer[F, O]
-                .serialize(message.getSubject(), message.getHeaders(), result)
-              _ <- Tracer[F].span("transfer_response").surround(Async[F].blocking(message.respond(connection, resultData)))
-              _ <- span.setStatus(Status.Ok)
-            } yield ()
-          case None => span.setStatus(Status.Ok) *> Async[F].unit // TODO: add logging
+  )(message: ServiceMessage)(using Tracer[F]): F[Unit] =
+    Tracer[F].joinOrRoot(message.getHeaders()) {
+      Tracer[F]
+        .spanBuilder(message.getSubject())
+        .withSpanKind(SpanKind.Server)
+        .build
+        .use { span =>
+          (for {
+            data <- Deserializer[F, I]
+              .deserialize(message.getSubject(), message.getHeaders(), message.getData())
+            result <- Tracer[F].span("execute_handler").surround(body.apply(message.getHeaders(), data)).rethrow
+            // allow handling for messages without replyTo
+            _ <- Async[F].pure(Option(message.getReplyTo())).recover(_ => None).flatMap {
+              case Some(replyTo) =>
+                for {
+                  resultData <- Serializer[F, O]
+                    .serialize(message.getSubject(), message.getHeaders(), result)
+                  _ <- Tracer[F].span("transfer_response").surround(Async[F].blocking(message.respond(connection, resultData)))
+                  _ <- span.setStatus(Status.Ok)
+                } yield ()
+              case None => span.setStatus(Status.Ok) *> Async[F].unit // TODO: add logging
+            }
+          } yield ()).recoverWith {
+            case e: ServiceError =>
+              for {
+                _ <- Async[F].blocking(message.respondStandardError(connection, e.message, e.code))
+                _ <- span.recordException(e)
+                _ <- span.setStatus(Status.Error)
+              } yield ()
+            case e: Throwable =>
+              for {
+                _ <- Async[F].blocking(message.respondStandardError(connection, e.getMessage(), 500))
+                _ <- span.recordException(e)
+                _ <- span.setStatus(Status.Error)
+              } yield ()
+          }
         }
-      } yield ()).recoverWith {
-        case e: ServiceError =>
-          for {
-            _ <- Async[F].blocking(message.respondStandardError(connection, e.message, e.code))
-            _ <- span.recordException(e)
-            _ <- span.setStatus(Status.Error)
-          } yield ()
-        case e: Throwable =>
-          for {
-            _ <- Async[F].blocking(message.respondStandardError(connection, e.getMessage(), 500))
-            _ <- span.recordException(e)
-            _ <- span.setStatus(Status.Error)
-          } yield ()
-      }
     }
 
   protected[service] def build(connection: Connection)(using D: Dispatcher[F], T: Tracer[F]): ServiceEndpoint = {
