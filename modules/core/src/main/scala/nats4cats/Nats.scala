@@ -117,9 +117,7 @@ class NatsClient[F[_]: Async] private[nats4cats] (connection: Connection) extend
       Async[F]
         .delay(
           connection
-            .createDispatcher((msg: JMessage) =>
-              effectDispatcher.unsafeRunAndForget(buffer.offer(msg))
-            )
+            .createDispatcher((msg: JMessage) => effectDispatcher.unsafeRunAndForget(buffer.offer(msg)))
         )
         .flatMap { dispatcher =>
           queue match {
