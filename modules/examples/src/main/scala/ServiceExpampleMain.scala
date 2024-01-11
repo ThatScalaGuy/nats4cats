@@ -36,8 +36,7 @@ object ServiceExampleMain extends IOApp.Simple {
   override def run: IO[Unit] = application.useForever.void
 }
 
-class EchoService[F[_]: Async: Nats: Dispatcher: Console]
-    extends Service[F]("EchoService", "1.0.0") {
+class EchoService[F[_]: Async: Nats: Dispatcher: Console] extends Service[F]("EchoService", "1.0.0") {
   import syntax.*
   namespace("test") {
     endpoint[String, String]("echo") -> { case msg =>
@@ -49,8 +48,8 @@ class EchoService[F[_]: Async: Nats: Dispatcher: Console]
 class PingService[F[_]: Async: Nats: Dispatcher] extends Service[F]("PingService", "1.0.0") {
   import syntax.*
   namespace("test") {
-    endpoint[String, String]("ping") ~ metadata(Map("test" -> "123")) -> {
-      case "ping" =>
+    endpoint[String, String]("ping") ~ metadata("test" -> "123", "arsch" -> "12345") --> {
+      case (_, "ping") =>
         Async[F].pure("pong")
       case _ => Async[F].raiseError(new Exception("invalid message"))
     }

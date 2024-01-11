@@ -16,14 +16,13 @@
 
 package nats4cats.service
 
-import io.nats.service.{Group, ServiceEndpoint}
+import io.nats.service.{Group}
+import cats.effect.kernel.Async
+import nats4cats.Deserializer
+import nats4cats.Serializer
 
-trait Extension
-trait EndpointExtension extends Extension {
-  def applyTo[F[_], I, O](endpoint: Endpoint[F[_], I, O]): Endpoint[F[_], I, O]
-}
-trait BuilderExtension extends Extension {
-  def applyTo(builder: ServiceEndpoint.Builder): ServiceEndpoint.Builder
+trait Extension {
+  def applyTo[F[_], I, O](endpoint: Endpoint[F[_], I, O])(using Async[F], Deserializer[F, I], Serializer[F, O]): Endpoint[F[_], I, O]
 }
 
 type GroupOpt = Option[Group]
@@ -32,5 +31,4 @@ class ServiceError(val code: Int, val message: String) extends Exception(s"$code
 
 final class InternalServerError extends ServiceError(500, "Internal Server Error")
 
-final class VerboseInternalServerError(cause: Throwable)
-    extends ServiceError(500, s"Internal Server Error - ${cause.getLocalizedMessage()}")
+final class VerboseInternalServerError(cause: Throwable) extends ServiceError(500, s"Internal Server Error - ${cause.getLocalizedMessage()}")

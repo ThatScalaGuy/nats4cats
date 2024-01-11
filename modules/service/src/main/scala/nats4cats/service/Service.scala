@@ -25,8 +25,8 @@ import nats4cats.{Deserializer, Nats, NatsClient, Serializer}
 import io.nats.service.{Group, ServiceBuilder, ServiceEndpoint}
 
 abstract class Service[F[_]: Async: Nats: Dispatcher](name: String, version: String) {
-
-  private[this] val endpoints = collection.mutable.Set.empty[Endpoint[F, ?, ?]]
+  given Service[F]                 = this
+  protected[service] val endpoints = collection.mutable.Set.empty[Endpoint[F, ?, ?]]
 
   protected[this] given GroupOpt = None
   protected[this] given builder: ServiceBuilder = new ServiceBuilder()
@@ -62,37 +62,23 @@ abstract class Service[F[_]: Async: Nats: Dispatcher](name: String, version: Str
       body
     }
 
-    def endpoint[I, O](
-        name: String
-    )(using GroupOpt, Deserializer[F, I], Serializer[F, O]): Endpoint[F[_], I, O] =
-      val entry = new Endpoint(name) ~ group(summon[GroupOpt])
-      endpoints.addOne(entry)
-      entry
+    def endpoint[I, O](name: String)(using GroupOpt, Deserializer[F, I], Serializer[F, O]): Endpoint[F[_], I, O] =
+      new Endpoint(name, group = summon[GroupOpt])
+
   }
 
-  final case class group(value: Option[Group]) extends BuilderExtension {
-    def applyTo(builder: ServiceEndpoint.Builder): ServiceEndpoint.Builder = value match {
-      case Some(group) => builder.group(group)
-      case None        => builder
-    }
+  final case class subject(value: String) extends Extension {
+    override def applyTo[F[_], I, O](endpoint: Endpoint[F, I, O])(using Async[F], Deserializer[F, I], Serializer[F, O]): Endpoint[F, I, O] =
+      endpoint.copy(subject = Some(value))
   }
 
-  final case class subject(value: String) extends BuilderExtension {
-    def applyTo(builder: ServiceEndpoint.Builder): ServiceEndpoint.Builder =
-      builder.endpointSubject(value)
+  final case class queue(value: String) extends Extension {
+    override def applyTo[F[_], I, O](endpoint: Endpoint[F, I, O])(using Async[F], Deserializer[F, I], Serializer[F, O]): Endpoint[F, I, O] =
+      endpoint.copy(queueGroup = Some(value))
   }
 
-  final case class queue(value: String) extends BuilderExtension {
-    def applyTo(builder: ServiceEndpoint.Builder): ServiceEndpoint.Builder =
-      builder.endpointQueueGroup(value)
-  }
-
-  final case class metadata(value: Map[String, String]) extends EndpointExtension {
-
-    override def applyTo[F[_$1], I, O](endpoint: Endpoint[F, I, O]): Endpoint[F, I, O] = {
-      endpoint.metadata.addAll(value)
-      endpoint
-    }
-
+  final case class metadata(values: (String, String)*) extends Extension {
+    override def applyTo[F[_], I, O](endpoint: Endpoint[F, I, O])(using Async[F], Deserializer[F, I], Serializer[F, O]): Endpoint[F, I, O] =
+      endpoint.copy(metadata = endpoint.metadata ++ Map(values: _*))
   }
 }

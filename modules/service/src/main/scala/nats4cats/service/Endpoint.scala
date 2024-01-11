@@ -26,56 +26,44 @@ import nats4cats.{Deserializer, Serializer}
 import io.nats.client.Connection
 import io.nats.client.impl.Headers
 import io.nats.service.{ServiceEndpoint, ServiceMessage}
+import io.nats.service.Group
 
-class Endpoint[F[_]: Async: Dispatcher, I, O](name: String)(using
-    Deserializer[F, I],
-    Serializer[F, O]
-) {
-  private[this] val builder = ServiceEndpoint.builder().endpointName(name)
-  private[this] var bodyOpt: Option[(Headers, I) => F[Either[Throwable, O]]] = None
-  private[service] val metadata = collection.mutable.Map.empty[String, String]
+final case class Endpoint[F[_]: Async, I, O](
+    name: String,
+    group: Option[Group] = None,
+    queueGroup: Option[String] = None,
+    subject: Option[String] = None,
+    metadata: Map[String, String] = Map.empty,
+    handler: Option[(Headers, I) => F[Either[Throwable, O]]] = None
+)(using Deserializer[F, I], Serializer[F, O]) {
 
-  /** Apply a builder action to the endpoint
-    *
-    * @param action
-    * @return
-    */
-  def ~(ext: Extension): Endpoint[F, I, O] = {
-    ext match {
-      case action: EndpointExtension => action.applyTo(this)
-      case action: BuilderExtension => {
-        action.applyTo(builder)
-        this
-      }
-    }
+  def ~(ext: Extension): Endpoint[F, I, O] = ext.applyTo(this)
+
+  def ->(body: I => F[O])(using S: Service[F]): Unit = {
+    val endpoint: Endpoint[F, I, O] = copy(handler = Some((_, i) => body(i).attempt))
+    S.endpoints.add(endpoint)
+    ()
   }
 
-  /** Set the handler for the endpoint
-    *
-    * @param body
-    */
-  def ->(body: I => F[O]): Unit = bodyOpt = Some((_, i) => body(i).attempt)
+  def -->(body: (Headers, I) => F[O])(using S: Service[F]): Unit = {
+    val endpoint: Endpoint[F, I, O] = copy(handler = Some((h, i) => body(h, i).attempt))
+    S.endpoints.add(endpoint)
+    ()
+  }
 
-  /** Set the handler with headers for the endpoint
-    *
-    * @param body
-    */
-  def -->(body: (Headers, I) => F[O]): Unit = bodyOpt = Some((h, i) => body(h, i).attempt)
+  def @>(body: I => F[Either[Throwable, O]])(using S: Service[F]): Unit = {
+    val endpoint: Endpoint[F, I, O] = copy(handler = Some((_, i) => body(i)))
+    S.endpoints.add(endpoint)
+    ()
+  }
 
-  /** Set the handler for the endpoint
-    *
-    * @param body
-    */
-  def @>(body: I => F[Either[Throwable, O]]): Unit = bodyOpt = Some((_, i) => body(i))
+  def @@>(body: (Headers, I) => F[Either[Throwable, O]])(using S: Service[F]): Unit = {
+    val endpoint: Endpoint[F, I, O] = copy(handler = Some((h, i) => body(h, i)))
+    S.endpoints.add(endpoint)
+    ()
+  }
 
-  /** Set the handler with headers for the endpoint
-    *
-    * @param body
-    */
-  def @@>(body: (Headers, I) => F[Either[Throwable, O]]): Unit =
-    bodyOpt = Some((h, i) => body(h, i))
-
-  private def handlerF(body: (Headers, I) => F[Either[Throwable, O]], connection: Connection)(
+  private[this] def handlerF(body: (Headers, I) => F[Either[Throwable, O]], connection: Connection)(
       message: ServiceMessage
   ): F[Unit] =
     (for {
@@ -103,20 +91,21 @@ class Endpoint[F[_]: Async: Dispatcher, I, O](name: String)(using
         )
     }
 
-  protected[service] def build(connection: Connection): ServiceEndpoint = {
+  protected[service] def build(connection: Connection)(using D: Dispatcher[F]): ServiceEndpoint = {
     import scala.jdk.CollectionConverters.*
-    bodyOpt.foreach(body => {
-      val f = handlerF(body, connection)
-      builder.handler((message) => {
-        summon[Dispatcher[F]].unsafeRunAndForget(
-          f(message)
-        )
+    val fn = handlerF(handler.get, connection)
+    val builder = ServiceEndpoint
+      .builder()
+      .endpointName(name)
+      .endpointMetadata(metadata.asJava)
+      .handler((message) => {
+        D.unsafeRunAndForget(fn(message))
       })
-    })
 
-    builder.endpointMetadata(metadata.asJava)
+    group.foreach(builder.group)
+    queueGroup.foreach(builder.endpointQueueGroup)
+    subject.foreach(builder.endpointSubject)
+
     builder.build()
   }
 }
-
-object Endpoint {}
