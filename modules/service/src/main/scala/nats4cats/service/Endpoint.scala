@@ -25,8 +25,8 @@ import nats4cats.{Deserializer, Serializer}
 
 import io.nats.client.Connection
 import io.nats.client.impl.Headers
-import io.nats.service.{ServiceEndpoint, ServiceMessage}
-import io.nats.service.Group
+import io.nats.service.{Group, ServiceEndpoint, ServiceMessage}
+import org.typelevel.otel4s.trace.{SpanKind, Status, Tracer}
 
 final case class Endpoint[F[_]: Async, I, O](
     name: String,
@@ -45,7 +45,8 @@ final case class Endpoint[F[_]: Async, I, O](
     ()
   }
 
-  def -->(body: (Headers, I) => F[O])(using S: Service[F]): Unit = {
+  def -->(body: String ?=> (Headers, I) => F[O])(using S: Service[F]): Unit = {
+    given String                    = "Hallo"
     val endpoint: Endpoint[F, I, O] = copy(handler = Some((h, i) => body(h, i).attempt))
     S.endpoints.add(endpoint)
     ()
@@ -63,35 +64,46 @@ final case class Endpoint[F[_]: Async, I, O](
     ()
   }
 
-  private[this] def handlerF(body: (Headers, I) => F[Either[Throwable, O]], connection: Connection)(
-      message: ServiceMessage
-  ): F[Unit] =
-    (for {
-      data <- Deserializer[F, I]
-        .deserialize(message.getSubject(), message.getHeaders(), message.getData())
-      result <- body.apply(message.getHeaders(), data).rethrow
-      // allow handling for messages without replyTo
-      _ <- Async[F].pure(Option(message.getReplyTo())).recover(_ => None).flatMap {
-        case Some(replyTo) =>
+  private[this] def handlerF(
+      body: (Headers, I) => F[Either[Throwable, O]],
+      connection: Connection
+  )(message: ServiceMessage)(using Tracer[F]): F[Unit] = Tracer[F]
+    .spanBuilder(message.getSubject())
+    .withSpanKind(SpanKind.Server)
+    .build
+    .use { span =>
+      (for {
+        data <- Deserializer[F, I]
+          .deserialize(message.getSubject(), message.getHeaders(), message.getData())
+        result <- Tracer[F].span("execute_handler").surround(body.apply(message.getHeaders(), data)).rethrow
+        // allow handling for messages without replyTo
+        _ <- Async[F].pure(Option(message.getReplyTo())).recover(_ => None).flatMap {
+          case Some(replyTo) =>
+            for {
+              resultData <- Serializer[F, O]
+                .serialize(message.getSubject(), message.getHeaders(), result)
+              _ <- Tracer[F].span("transfer_response").surround(Async[F].blocking(message.respond(connection, resultData)))
+              _ <- span.setStatus(Status.Ok)
+            } yield ()
+          case None => span.setStatus(Status.Ok) *> Async[F].unit // TODO: add logging
+        }
+      } yield ()).recoverWith {
+        case e: ServiceError =>
           for {
-            resultData <- Serializer[F, O]
-              .serialize(message.getSubject(), message.getHeaders(), result)
-            _ <- Async[F].blocking(message.respond(connection, resultData))
+            _ <- Async[F].blocking(message.respondStandardError(connection, e.message, e.code))
+            _ <- span.recordException(e)
+            _ <- span.setStatus(Status.Error)
           } yield ()
-        case None => Async[F].unit // TODO: add logging
+        case e: Throwable =>
+          for {
+            _ <- Async[F].blocking(message.respondStandardError(connection, e.getMessage(), 500))
+            _ <- span.recordException(e)
+            _ <- span.setStatus(Status.Error)
+          } yield ()
       }
-    } yield ()).recoverWith {
-      case e: ServiceError =>
-        Async[F].blocking(
-          message.respondStandardError(connection, e.message, e.code)
-        )
-      case e: Throwable =>
-        Async[F].blocking(
-          message.respondStandardError(connection, e.getMessage(), 500)
-        )
     }
 
-  protected[service] def build(connection: Connection)(using D: Dispatcher[F]): ServiceEndpoint = {
+  protected[service] def build(connection: Connection)(using D: Dispatcher[F], T: Tracer[F]): ServiceEndpoint = {
     import scala.jdk.CollectionConverters.*
     val fn = handlerF(handler.get, connection)
     val builder = ServiceEndpoint

@@ -16,8 +16,6 @@
 
 package example
 
-import cats.implicits.*
-
 import cats.effect.kernel.Async
 import cats.effect.std.{Console, Dispatcher}
 import cats.effect.{IO, IOApp}
@@ -25,32 +23,38 @@ import cats.effect.{IO, IOApp}
 import nats4cats.Nats
 import nats4cats.service.Service
 
+import org.typelevel.otel4s.java.OtelJava
+import org.typelevel.otel4s.trace.Tracer
+
 object ServiceExampleMain extends IOApp.Simple {
 
   def application = for {
     given Nats[IO]       <- Nats.connectHosts[IO]("localhost:4222")
     given Dispatcher[IO] <- Dispatcher.parallel[IO]
+    given Tracer[IO]     <- OtelJava.global.flatMap(_.tracerProvider.get("service")).toResource
     _                    <- new EchoService[IO].run()
     _                    <- new PingService[IO].run()
   } yield ()
   override def run: IO[Unit] = application.useForever.void
 }
 
-class EchoService[F[_]: Async: Nats: Dispatcher: Console] extends Service[F]("EchoService", "1.0.0") {
+class EchoService[F[_]: Async: Nats: Dispatcher: Console: Tracer] extends Service[F]("EchoService", "1.0.0") {
   import syntax.*
   namespace("test") {
     endpoint[String, String]("echo") -> { case msg =>
-      Async[F].pure(msg) <* Console[F].println(msg)
+      Async[F].pure(msg)
     }
   }
 }
 
-class PingService[F[_]: Async: Nats: Dispatcher] extends Service[F]("PingService", "1.0.0") {
+class PingService[F[_]: Async: Nats: Dispatcher: Tracer] extends Service[F]("PingService", "1.0.0") {
   import syntax.*
   namespace("test") {
-    endpoint[String, String]("ping") ~ metadata("test" -> "123", "arsch" -> "12345") --> {
+    endpoint[String, String]("ping") --> {
       case (_, "ping") =>
-        Async[F].pure("pong")
+        Tracer[F].span("ping").surround {
+          Async[F].pure("pong")
+        }
       case _ => Async[F].raiseError(new Exception("invalid message"))
     }
   }

@@ -23,8 +23,9 @@ import cats.effect.std.Dispatcher
 import nats4cats.{Deserializer, Nats, NatsClient, Serializer}
 
 import io.nats.service.{Group, ServiceBuilder, ServiceEndpoint}
+import org.typelevel.otel4s.trace.Tracer
 
-abstract class Service[F[_]: Async: Nats: Dispatcher](name: String, version: String) {
+abstract class Service[F[_]: Async: Nats: Dispatcher: Tracer](name: String, version: String) {
   given Service[F]                 = this
   protected[service] val endpoints = collection.mutable.Set.empty[Endpoint[F, ?, ?]]
 
