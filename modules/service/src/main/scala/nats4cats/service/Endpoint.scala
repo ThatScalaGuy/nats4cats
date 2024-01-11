@@ -77,16 +77,24 @@ final case class Endpoint[F[_]: Async, I, O](
         .build
         .use { span =>
           (for {
-            data <- Deserializer[F, I]
-              .deserialize(message.getSubject(), message.getHeaders(), message.getData())
-            result <- Tracer[F].span("execute_handler").surround(body.apply(message.getHeaders(), data)).rethrow
+            data <- Tracer[F]
+              .span("request.deserialize")
+              .surround(
+                Deserializer[F, I]
+                  .deserialize(message.getSubject(), message.getHeaders(), message.getData())
+              )
+            result <- Tracer[F].span("function").surround(body.apply(message.getHeaders(), data)).rethrow
             // allow handling for messages without replyTo
             _ <- Async[F].pure(Option(message.getReplyTo())).recover(_ => None).flatMap {
               case Some(replyTo) =>
                 for {
-                  resultData <- Serializer[F, O]
-                    .serialize(message.getSubject(), message.getHeaders(), result)
-                  _ <- Tracer[F].span("transfer_response").surround(Async[F].blocking(message.respond(connection, resultData)))
+                  resultData <- Tracer[F]
+                    .span("response.serialize")
+                    .surround(
+                      Serializer[F, O]
+                        .serialize(message.getSubject(), message.getHeaders(), result)
+                    )
+                  _ <- Tracer[F].span("response.send").surround(Async[F].blocking(message.respond(connection, resultData)))
                   _ <- span.setStatus(Status.Ok)
                 } yield ()
               case None => span.setStatus(Status.Ok) *> Async[F].unit // TODO: add logging
@@ -94,13 +102,13 @@ final case class Endpoint[F[_]: Async, I, O](
           } yield ()).recoverWith {
             case e: ServiceError =>
               for {
-                _ <- Async[F].blocking(message.respondStandardError(connection, e.message, e.code))
+                _ <- Tracer[F].span("response.send").surround(Async[F].blocking(message.respondStandardError(connection, e.message, e.code)))
                 _ <- span.recordException(e)
                 _ <- span.setStatus(Status.Error)
               } yield ()
             case e: Throwable =>
               for {
-                _ <- Async[F].blocking(message.respondStandardError(connection, e.getMessage(), 500))
+                _ <- Tracer[F].span("response.send").surround(Async[F].blocking(message.respondStandardError(connection, e.getMessage(), 500)))
                 _ <- span.recordException(e)
                 _ <- span.setStatus(Status.Error)
               } yield ()
