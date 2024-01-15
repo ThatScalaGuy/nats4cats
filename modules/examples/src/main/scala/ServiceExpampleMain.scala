@@ -21,10 +21,13 @@ import cats.effect.std.{Console, Dispatcher}
 import cats.effect.{IO, IOApp}
 
 import nats4cats.Nats
-import nats4cats.service.Service
+import nats4cats.service.*
 
 import org.typelevel.otel4s.java.OtelJava
 import org.typelevel.otel4s.trace.Tracer
+import io.nats.client.impl.Headers
+import nats4cats.service.otel4s.given
+import cats.implicits.*
 
 object ServiceExampleMain extends IOApp.Simple {
 
@@ -34,9 +37,17 @@ object ServiceExampleMain extends IOApp.Simple {
     given Tracer[IO]     <- OtelJava.global.flatMap(_.tracerProvider.get("service")).toResource
     _                    <- new EchoService[IO].run()
     _                    <- new PingService[IO].run()
+    _                    <- client[IO].toResource
   } yield ()
   override def run: IO[Unit] = application.useForever.void
 }
+
+def client[F[_]: Async: Nats: Tracer] = Tracer[F]
+  .span("call")
+  .surround(for {
+    headers <- Tracer[F].propagate(Headers())
+    _       <- Nats[F].request[String, String]("test.echo", "Hallo", headers).onError(e => Async[F].delay(println(e)))
+  } yield ())
 
 class EchoService[F[_]: Async: Nats: Dispatcher: Console: Tracer] extends Service[F]("EchoService", "1.0.0") {
   import syntax.*
@@ -49,11 +60,28 @@ class EchoService[F[_]: Async: Nats: Dispatcher: Console: Tracer] extends Servic
 
 class PingService[F[_]: Async: Nats: Dispatcher: Tracer] extends Service[F]("PingService", "1.0.0") {
   import syntax.*
+
+  namespace("accounts") {
+    namespace("*") {
+      namespace("users") {
+        namespace("*") {
+          endpoint[String, String]("ping1") --> { case msg =>
+            Async[F].pure(msg.subjectSegments.mkString(","))
+          }
+        }
+      }
+
+      endpoint[String, String]("ping2") --> { case msg =>
+        Async[F].pure(msg.subjectSegments.mkString(","))
+      }
+    }
+  }
+
   namespace("test") {
-    endpoint[String, String]("ping") --> {
-      case (_, "ping") =>
+    endpoint[String, String]("ping3") ~ metadata("http.path" -> "/ping/{name}", "http.auth.mode" -> "jwt,explode") --> {
+      case Request("ping", _, list) =>
         Tracer[F].span("ping").surround {
-          Async[F].pure("pong")
+          Async[F].pure(list.mkString(","))
         }
       case _ => Async[F].raiseError(new Exception("invalid message"))
     }
