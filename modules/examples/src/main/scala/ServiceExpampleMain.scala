@@ -16,18 +16,19 @@
 
 package example
 
+import cats.implicits.*
+
 import cats.effect.kernel.Async
 import cats.effect.std.{Console, Dispatcher}
 import cats.effect.{IO, IOApp}
 
 import nats4cats.Nats
 import nats4cats.service.*
+import nats4cats.service.otel4s.given
 
+import io.nats.client.impl.Headers
 import org.typelevel.otel4s.java.OtelJava
 import org.typelevel.otel4s.trace.Tracer
-import io.nats.client.impl.Headers
-import nats4cats.service.otel4s.given
-import cats.implicits.*
 
 object ServiceExampleMain extends IOApp.Simple {
 

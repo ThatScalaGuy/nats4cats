@@ -20,9 +20,8 @@ import cats.effect.kernel.Async
 
 import nats4cats.{Deserializer, Serializer}
 
-import io.nats.service.Group
 import io.nats.client.impl.Headers
-import io.nats.service.ServiceMessage
+import io.nats.service.Group
 
 trait Extension {
   def applyTo[F[_], I, O](endpoint: Endpoint[F[_], I, O])(using Async[F], Deserializer[F, I], Serializer[F, O]): Endpoint[F[_], I, O]

@@ -24,7 +24,6 @@ import cats.effect.std.Dispatcher
 import nats4cats.{Deserializer, Serializer}
 
 import io.nats.client.Connection
-import io.nats.client.impl.Headers
 import io.nats.service.{Group, ServiceEndpoint, ServiceMessage}
 import org.typelevel.otel4s.trace.{SpanKind, Status, Tracer}
 
