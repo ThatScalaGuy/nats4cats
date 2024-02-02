@@ -133,13 +133,6 @@ final case class Endpoint[F[_]: Async, I, O](
     queueGroup.foreach(builder.endpointQueueGroup)
     group.foreach(builder.group)
     subject.foreach(builder.endpointSubject)
-
-    // (group, subject) match {
-    //   case (Some(group), None)          => builder.endpointSubject(group.appendGroup(new Group(name)).getSubject())
-    //   case (Some(group), Some(subject)) => builder.endpointSubject(group.appendGroup(new Group(subject)).getSubject())
-    //   case _                            => builder.endpointSubject(name)
-    // }
-
     builder.build()
   }
 }
