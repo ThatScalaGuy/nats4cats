@@ -44,8 +44,8 @@ object Client {
             headers <- Tracer[F].propagate(Headers())
             result <- Nats[F].request[I, O](subject, data, headers).flatMap {
               case msg if msg.headers.containsKey("Nats-Service-Error-Code") =>
-                val errorCode    = msg.headers.get("Nats-Service-Error-Code").asScala.headOption.getOrElse("500").toInt
-                val errorMessage = msg.headers.get("Nats-Service-Error").asScala.headOption.getOrElse("Unknown error")
+                val errorCode    = Option(msg.headers.get("Nats-Service-Error-Code")).map(_.asScala).flatMap(_.headOption).getOrElse("500").toInt
+                val errorMessage = Option(msg.headers.get("Nats-Service-Error")).map(_.asScala).flatMap(_.headOption).getOrElse("Unknown service error")
                 Sync[F].raiseError(new ServiceError(errorCode, errorMessage))
               case msg => msg.pure[F]
             }
