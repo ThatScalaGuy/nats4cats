@@ -36,6 +36,9 @@ trait Deserializer[F[_], A] {
 
 object Deserializer {
 
+  class DeserializeError(val topic: String, val headers: Headers, val data: Array[Byte], val cause: Throwable)
+      extends RuntimeException(s"Failed to deserialize message from topic $topic with headers $headers and data $data", cause)
+
   def apply[F[_], A](using Deserializer[F, A]): Deserializer[F, A] = summon
 
   def instance[F[_]: Sync, A](
@@ -64,8 +67,9 @@ object Deserializer {
         topic: String,
         headers: Headers,
         data: Array[Byte]
-    ): F[A] = fn(topic, headers, data)
-
+    ): F[A] = fn(topic, headers, data).recoverWith {
+      new DeserializeError(topic, headers, data, _).raiseError[F, A]
+    }
     override def option: Deserializer[F, Option[A]] = instance { (topic, headers, data) =>
       fn(topic, headers, data).map(Some(_)).recover { case _ => None }
     }

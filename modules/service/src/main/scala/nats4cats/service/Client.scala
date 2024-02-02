@@ -27,6 +27,7 @@ import io.nats.client.impl.Headers
 import org.typelevel.otel4s.trace.Tracer
 
 import scala.jdk.CollectionConverters.*
+import nats4cats.Deserializer.DeserializeError
 
 trait Client[F[_]] {
   def request[I, O](subject: String, data: I, headers: Headers = Headers())(using Serializer[F, I], Deserializer[F, O]): F[Message[O]]
@@ -42,13 +43,14 @@ object Client {
         .surround(
           for {
             headersWithTracing <- Tracer[F].propagate(headers)
-            result <- Nats[F].request[I, O](subject, data, headersWithTracing).flatMap {
-              case msg if msg.headers.containsKey("Nats-Service-Error-Code") =>
-                val errorCode    = Option(msg.headers.get("Nats-Service-Error-Code")).map(_.asScala).flatMap(_.headOption).getOrElse("500").toInt
-                val errorMessage = Option(msg.headers.get("Nats-Service-Error")).map(_.asScala).flatMap(_.headOption).getOrElse("Unknown service error")
+            result <- Nats[F].request[I, O](subject, data, headersWithTracing).recoverWith {
+              case e: DeserializeError if e.headers.containsKey("Nats-Service-Error-Code") =>
+                val errorCode    = Option(e.headers.get("Nats-Service-Error-Code")).map(_.asScala).flatMap(_.headOption).getOrElse("500").toInt
+                val errorMessage = Option(e.headers.get("Nats-Service-Error")).map(_.asScala).flatMap(_.headOption).getOrElse("Unknown service error")
                 Sync[F].raiseError(new ServiceError(errorCode, errorMessage))
-              case msg => msg.pure[F]
+              case e => e.raiseError[F, Message[O]]
             }
+
           } yield result
         )
   }
