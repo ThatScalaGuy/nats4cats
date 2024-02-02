@@ -20,6 +20,7 @@ import cats.implicits.*
 
 import cats.effect.kernel.Sync
 
+import nats4cats.Deserializer.DeserializeError
 import nats4cats.service.otel4s.given
 import nats4cats.{Deserializer, Message, Nats, Serializer}
 
@@ -27,7 +28,6 @@ import io.nats.client.impl.Headers
 import org.typelevel.otel4s.trace.Tracer
 
 import scala.jdk.CollectionConverters.*
-import nats4cats.Deserializer.DeserializeError
 
 trait Client[F[_]] {
   def request[I, O](subject: String, data: I, headers: Headers = Headers())(using Serializer[F, I], Deserializer[F, O]): F[Message[O]]
