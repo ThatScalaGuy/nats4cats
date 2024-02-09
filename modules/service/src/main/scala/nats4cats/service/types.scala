@@ -20,13 +20,29 @@ import cats.effect.kernel.Async
 
 import nats4cats.{Deserializer, Serializer}
 
+import io.nats.client.impl.Headers
 import io.nats.service.Group
 
 trait Extension {
   def applyTo[F[_], I, O](endpoint: Endpoint[F[_], I, O])(using Async[F], Deserializer[F, I], Serializer[F, O]): Endpoint[F[_], I, O]
 }
 
-type GroupOpt = Option[Group]
+final case class Request[A](val data: A, val headers: Headers, val subjectSegments: List[String])
+object Request {
+  import scala.util.matching.Regex
+
+  def extractFromSubject(input: String, pattern: String): List[String] = {
+    val modifiedPattern     = pattern.replaceAll("\\.", "\\\\.").replaceAll("\\*", "(.*?)")
+    val regexPattern: Regex = modifiedPattern.r
+    regexPattern.findAllIn(input).matchData.flatMap(m => (1 to m.groupCount).map(m.group)).toList
+  }
+}
+final case class GroupList(val groups: List[String]) {
+  def toGroup: Option[Group] = groups match {
+    case Nil  => None
+    case list => Some(groups.map(name => new Group(name)).reduce((a, b) => a.appendGroup(b)))
+  }
+}
 
 class ServiceError(val code: Int, val message: String) extends Exception(s"$code - $message")
 

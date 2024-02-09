@@ -23,7 +23,12 @@ import scala.jdk.CollectionConverters.*
 
 object otel4s {
   given TextMapUpdater[Headers] = new TextMapUpdater[Headers] {
-    override def updated(carrier: Headers, key: String, value: String): Headers = carrier.add(key, value)
+    override def updated(carrier: Headers, key: String, value: String): Headers =
+      if (!key.isEmpty() && !value.isEmpty()) {
+        carrier.add(key, value)
+      } else {
+        carrier
+      }
   }
 
   given TextMapGetter[Headers] = new TextMapGetter[Headers] {

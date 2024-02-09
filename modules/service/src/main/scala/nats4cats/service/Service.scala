@@ -29,7 +29,7 @@ abstract class Service[F[_]: Async: Nats: Dispatcher: Tracer](name: String, vers
   given Service[F]                 = this
   protected[service] val endpoints = collection.mutable.Set.empty[Endpoint[F, ?, ?]]
 
-  protected[this] given GroupOpt = None
+  protected[this] given GroupList = GroupList(List.empty)
   protected[this] given builder: ServiceBuilder = new ServiceBuilder()
     .name(name)
     .version(version)
@@ -55,17 +55,13 @@ abstract class Service[F[_]: Async: Nats: Dispatcher: Tracer](name: String, vers
       ()
     }
 
-    def namespace(name: String)(body: GroupOpt ?=> Unit)(using group: GroupOpt): Unit = {
-      given current: GroupOpt = group match {
-        case Some(value) => Some(value.appendGroup(new Group(name)))
-        case None        => Some(new Group(name))
-      }
+    def namespace(name: String)(body: GroupList ?=> Unit)(using groups: GroupList): Unit = {
+      given current: GroupList = groups.copy(groups = groups.groups :+ name)
       body
     }
 
-    def endpoint[I, O](name: String)(using GroupOpt, Deserializer[F, I], Serializer[F, O]): Endpoint[F[_], I, O] =
-      new Endpoint(name, group = summon[GroupOpt])
-
+    def endpoint[I, O](name: String)(using GroupList, Deserializer[F, I], Serializer[F, O]): Endpoint[F[_], I, O] =
+      new Endpoint(name, group = summon[GroupList].toGroup)
   }
 
   final case class subject(value: String) extends Extension {

@@ -24,7 +24,6 @@ import cats.effect.std.Dispatcher
 import nats4cats.{Deserializer, Serializer}
 
 import io.nats.client.Connection
-import io.nats.client.impl.Headers
 import io.nats.service.{Group, ServiceEndpoint, ServiceMessage}
 import org.typelevel.otel4s.trace.{SpanKind, Status, Tracer}
 
@@ -36,38 +35,38 @@ final case class Endpoint[F[_]: Async, I, O](
     queueGroup: Option[String] = None,
     subject: Option[String] = None,
     metadata: Map[String, String] = Map.empty,
-    handler: Option[(Headers, I) => F[Either[Throwable, O]]] = None
+    handler: Option[Request[I] => F[Either[Throwable, O]]] = None
 )(using Deserializer[F, I], Serializer[F, O]) {
 
   def ~(ext: Extension): Endpoint[F, I, O] = ext.applyTo(this)
 
   def ->(body: I => F[O])(using S: Service[F]): Unit = {
-    val endpoint: Endpoint[F, I, O] = copy(handler = Some((_, i) => body(i).attempt))
+    val endpoint: Endpoint[F, I, O] = copy(handler = Some(req => body(req.data).attempt))
     S.endpoints.add(endpoint)
     ()
   }
 
-  def -->(body: String ?=> (Headers, I) => F[O])(using S: Service[F]): Unit = {
-    given String                    = "Hallo"
-    val endpoint: Endpoint[F, I, O] = copy(handler = Some((h, i) => body(h, i).attempt))
+  def -->(body: Request[I] => F[O])(using S: Service[F]): Unit = {
+    val endpoint: Endpoint[F, I, O] = copy(handler = Some(req => body(req).attempt))
     S.endpoints.add(endpoint)
     ()
   }
 
   def @>(body: I => F[Either[Throwable, O]])(using S: Service[F]): Unit = {
-    val endpoint: Endpoint[F, I, O] = copy(handler = Some((_, i) => body(i)))
+    val endpoint: Endpoint[F, I, O] = copy(handler = Some(req => body(req.data)))
     S.endpoints.add(endpoint)
     ()
   }
 
-  def @@>(body: (Headers, I) => F[Either[Throwable, O]])(using S: Service[F]): Unit = {
-    val endpoint: Endpoint[F, I, O] = copy(handler = Some((h, i) => body(h, i)))
+  def @@>(body: Request[I] => F[Either[Throwable, O]])(using S: Service[F]): Unit = {
+    val endpoint: Endpoint[F, I, O] = copy(handler = Some(req => body(req)))
     S.endpoints.add(endpoint)
     ()
   }
 
   private[this] def handlerF(
-      body: (Headers, I) => F[Either[Throwable, O]],
+      body: Request[I] => F[Either[Throwable, O]],
+      subjectPattern: String,
       connection: Connection
   )(message: ServiceMessage)(using Tracer[F]): F[Unit] =
     Tracer[F].joinOrRoot(message.getHeaders()) {
@@ -83,7 +82,10 @@ final case class Endpoint[F[_]: Async, I, O](
                 Deserializer[F, I]
                   .deserialize(message.getSubject(), message.getHeaders(), message.getData())
               )
-            result <- Tracer[F].span("function").surround(body.apply(message.getHeaders(), data)).rethrow
+            result <- Tracer[F]
+              .span("function")
+              .surround(body.apply(Request[I](data, message.getHeaders(), Request.extractFromSubject(message.getSubject(), subjectPattern))))
+              .rethrow
             // allow handling for messages without replyTo
             _ <- Async[F].pure(Option(message.getReplyTo())).recover(_ => None).flatMap {
               case Some(replyTo) =>
@@ -118,7 +120,8 @@ final case class Endpoint[F[_]: Async, I, O](
 
   protected[service] def build(connection: Connection)(using D: Dispatcher[F], T: Tracer[F]): ServiceEndpoint = {
     import scala.jdk.CollectionConverters.*
-    val fn = handlerF(handler.get, connection)
+    val subjectPattern = group.map(_.getSubject() + "." + name).getOrElse(name)
+    val fn             = handlerF(handler.get, subjectPattern, connection)
     val builder = ServiceEndpoint
       .builder()
       .endpointName(name)
@@ -127,10 +130,9 @@ final case class Endpoint[F[_]: Async, I, O](
         D.unsafeRunAndForget(fn(message))
       })
 
-    group.foreach(builder.group)
     queueGroup.foreach(builder.endpointQueueGroup)
+    group.foreach(builder.group)
     subject.foreach(builder.endpointSubject)
-
     builder.build()
   }
 }

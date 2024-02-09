@@ -3,7 +3,7 @@ lazy val V = new {
   val Scala213        = "2.13.10"
   val Cats            = "2.10.0"
   val CatsEffect      = "3.5.2"
-  val Nats            = "2.17.1"
+  val Nats            = "2.17.2"
   val Munit           = "1.0.0-M10"
   val MunitCatsEffect = "2.0.0-M4"
   val Testcontainers  = "0.41.0"
@@ -90,8 +90,8 @@ lazy val examples = project
   .settings(
     name := "nats4cats-examples",
     libraryDependencies ++= Seq(
-      "io.opentelemetry" % "opentelemetry-exporter-otlp"               % "1.34.0" % Runtime,
-      "io.opentelemetry" % "opentelemetry-sdk-extension-autoconfigure" % "1.34.0" % Runtime
+      "io.opentelemetry" % "opentelemetry-exporter-otlp"               % "1.34.1" % Runtime,
+      "io.opentelemetry" % "opentelemetry-sdk-extension-autoconfigure" % "1.34.1" % Runtime
     ),
     javaOptions += "-Dotel.java.global-autoconfigure.enabled=true",
     javaOptions += "-Dotel.service.name=example-service",

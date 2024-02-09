@@ -16,6 +16,8 @@
 
 package nats4cats
 
+import cats.implicits.*
+
 import cats.effect.kernel.Sync
 
 import io.nats.client.impl.Headers
@@ -28,6 +30,8 @@ trait Serializer[F[_], A] {
 }
 
 object Serializer {
+  class SerializerError[A](val topic: String, val headers: Headers, val data: A, val cause: Throwable)
+      extends RuntimeException(s"Failed to serialize message to topic $topic with headers $headers and data $data", cause)
 
   def apply[F[_], A](using Serializer[F, A]): Serializer[F, A] = summon
 
@@ -39,7 +43,9 @@ object Serializer {
         topic: String,
         headers: Headers,
         data: A
-    ): F[Array[Byte]] = fn(topic, headers, data)
+    ): F[Array[Byte]] = fn(topic, headers, data).handleErrorWith {
+      SerializerError[A](topic, headers, data, _).raiseError[F, Array[Byte]]
+    }
 
     override def contramap[B](f: B => A): Serializer[F, B] = instance { (topic, headers, data) =>
       serialize(topic, headers, f(data))

@@ -93,7 +93,7 @@ class NatsClient[F[_]: Async] private[nats4cats] (connection: Connection) extend
       response.getHeaders(),
       response.getData()
     )
-  } yield Message[B](value, response.getSubject, response.getHeaders, None)
+  } yield Message[B](value, response.getSubject, Option(response.getHeaders()).getOrElse(Headers()), None)
 
   override def subscribe[B](topic: String)(
       handler: Message[B] => F[Unit]
