@@ -44,7 +44,7 @@ final case class GroupList(val groups: List[String]) {
   }
 }
 
-class ServiceError(val code: Int, val message: String) extends Exception(s"$code - $message")
+class ServiceError(val code: Int, val message: String) extends RuntimeException(s"$code - $message")
 
 final class InternalServerError extends ServiceError(500, "Internal Server Error")
 

@@ -55,8 +55,8 @@ abstract class Service[F[_]: Async: Nats: Dispatcher: Tracer](name: String, vers
       ()
     }
 
-    def namespace(name: String)(body: GroupList ?=> Unit)(using groups: GroupList): Unit = {
-      given current: GroupList = groups.copy(groups = groups.groups :+ name)
+    def namespace(name: String*)(body: GroupList ?=> Unit)(using groups: GroupList): Unit = {
+      given current: GroupList = groups.copy(groups = groups.groups :++ name)
       body
     }
 
