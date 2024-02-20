@@ -27,7 +27,10 @@ trait Extension {
   def applyTo[F[_], I, O](endpoint: Endpoint[F[_], I, O])(using Async[F], Deserializer[F, I], Serializer[F, O]): Endpoint[F[_], I, O]
 }
 
-final case class Request[A](val data: A, val headers: Headers, val subjectSegments: List[String])
+final case class Request[A](val data: A, val headers: Headers, val subjectSegments: List[String]) {
+  def headerOpt(name: String): Option[String] = Option(headers.getFirst(name))
+}
+
 object Request {
   import scala.util.matching.Regex
 
