@@ -6,7 +6,7 @@ lazy val V = new {
   val Nats            = "2.17.2"
   val Munit           = "1.0.0-M10"
   val MunitCatsEffect = "2.0.0-M4"
-  val Testcontainers  = "0.41.0"
+  val Testcontainers  = "0.41.3"
   val Circe           = "0.14.6"
   val Otel4s          = "0.4.0"
 }
