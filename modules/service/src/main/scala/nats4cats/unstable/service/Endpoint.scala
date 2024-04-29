@@ -25,7 +25,7 @@ import nats4cats.{Deserializer, Serializer}
 
 import io.nats.client.Connection
 import io.nats.service.{Group, ServiceEndpoint, ServiceMessage}
-import org.typelevel.otel4s.trace.{SpanKind, Tracer, StatusCode}
+import org.typelevel.otel4s.trace.{SpanKind, StatusCode, Tracer}
 
 import otel4s.given
 
