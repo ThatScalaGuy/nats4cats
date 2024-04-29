@@ -25,7 +25,7 @@ import nats4cats.{Deserializer, Serializer}
 
 import io.nats.client.Connection
 import io.nats.service.{Group, ServiceEndpoint, ServiceMessage}
-import org.typelevel.otel4s.trace.{SpanKind, Status, Tracer}
+import org.typelevel.otel4s.trace.{SpanKind, Tracer, StatusCode}
 
 import otel4s.given
 
@@ -97,22 +97,22 @@ final case class Endpoint[F[_]: Async, I, O](
                         .serialize(message.getSubject(), message.getHeaders(), result)
                     )
                   _ <- Tracer[F].span("response.send").surround(Async[F].blocking(message.respond(connection, resultData)))
-                  _ <- span.setStatus(Status.Ok)
+                  _ <- span.setStatus(StatusCode.Ok)
                 } yield ()
-              case None => span.setStatus(Status.Ok) *> Async[F].unit // TODO: add logging
+              case None => span.setStatus(StatusCode.Ok) *> Async[F].unit // TODO: add logging
             }
           } yield ()).recoverWith {
             case e: ServiceError =>
               for {
                 _ <- Tracer[F].span("response.send").surround(Async[F].blocking(message.respondStandardError(connection, e.message, e.code)))
                 _ <- span.recordException(e)
-                _ <- span.setStatus(Status.Error)
+                _ <- span.setStatus(StatusCode.Error)
               } yield ()
             case e: Throwable =>
               for {
                 _ <- Tracer[F].span("response.send").surround(Async[F].blocking(message.respondStandardError(connection, e.getMessage(), 500)))
                 _ <- span.recordException(e)
-                _ <- span.setStatus(Status.Error)
+                _ <- span.setStatus(StatusCode.Error)
               } yield ()
           }
         }

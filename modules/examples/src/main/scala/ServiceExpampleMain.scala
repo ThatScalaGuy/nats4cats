@@ -25,7 +25,7 @@ import cats.effect.{IO, IOApp}
 import nats4cats.Nats
 import nats4cats.unstable.service.*
 
-import org.typelevel.otel4s.java.OtelJava
+import org.typelevel.otel4s.oteljava.OtelJava
 import org.typelevel.otel4s.trace.Tracer
 
 object ServiceExampleMain extends IOApp.Simple {
@@ -33,7 +33,7 @@ object ServiceExampleMain extends IOApp.Simple {
   def application = for {
     given Nats[IO]       <- Nats.connectHosts[IO]("localhost:4222")
     given Dispatcher[IO] <- Dispatcher.parallel[IO]
-    given Tracer[IO]     <- OtelJava.global.flatMap(_.tracerProvider.get("service")).toResource
+    given Tracer[IO]     <- OtelJava.global[IO].flatMap(_.tracerProvider.get("service")).toResource
     _                    <- new EchoService[IO].run()
     _                    <- new PingService[IO].run()
     _                    <- client[IO].toResource
