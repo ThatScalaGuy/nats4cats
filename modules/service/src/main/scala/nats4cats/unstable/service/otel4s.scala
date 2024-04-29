@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package nats4cats.service
+package nats4cats.unstable.service
 
 import io.nats.client.impl.Headers
 import org.typelevel.otel4s.context.propagation.{TextMapGetter, TextMapUpdater}

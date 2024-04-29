@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package nats4cats.service
+package nats4cats.unstable.service
 
 import cats.effect.implicits.*
 import cats.effect.kernel.{Async, Resource}

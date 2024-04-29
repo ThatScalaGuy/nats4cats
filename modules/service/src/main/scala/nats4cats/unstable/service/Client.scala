@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package nats4cats.service
+package nats4cats.unstable.service
 
 import cats.implicits.*
 
 import cats.effect.kernel.Sync
 
 import nats4cats.Deserializer.DeserializeError
-import nats4cats.service.otel4s.given
+import nats4cats.unstable.service.otel4s.given
 import nats4cats.{Deserializer, Message, Nats, Serializer}
 
 import io.nats.client.impl.Headers

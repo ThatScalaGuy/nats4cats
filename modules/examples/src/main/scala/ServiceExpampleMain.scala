@@ -23,7 +23,7 @@ import cats.effect.std.{Console, Dispatcher}
 import cats.effect.{IO, IOApp}
 
 import nats4cats.Nats
-import nats4cats.service.*
+import nats4cats.unstable.service.*
 
 import org.typelevel.otel4s.java.OtelJava
 import org.typelevel.otel4s.trace.Tracer
