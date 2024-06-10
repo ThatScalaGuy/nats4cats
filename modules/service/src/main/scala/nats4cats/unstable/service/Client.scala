@@ -16,7 +16,7 @@
 
 package nats4cats.unstable.service
 
-import cats.implicits.*
+import cats.implicits._
 
 import cats.effect.kernel.Sync
 
@@ -27,7 +27,7 @@ import nats4cats.{Deserializer, Message, Nats, Serializer}
 import io.nats.client.impl.Headers
 import org.typelevel.otel4s.trace.Tracer
 
-import scala.jdk.CollectionConverters.*
+import scala.jdk.CollectionConverters._
 
 trait Client[F[_]] {
   def request[I, O](subject: String, data: I, headers: Headers = Headers())(using Serializer[F, I], Deserializer[F, O]): F[Message[O]]

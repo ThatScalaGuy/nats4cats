@@ -16,16 +16,16 @@
 
 package nats4cats
 
-import cats.implicits.*
+import cats.implicits._
 
-import cats.effect.implicits.*
+import cats.effect.implicits._
 import cats.effect.kernel.{Async, Resource, Sync}
 import cats.effect.std.{Dispatcher, Queue}
 
 import io.nats.client.impl.Headers
 import io.nats.client.{Connection, Message => JMessage, Nats => JNats, Options}
 
-import scala.concurrent.duration.*
+import scala.concurrent.duration._
 
 trait Nats[F[_]] {
   def publish[A](subject: String, value: A, headers: Headers = Headers())(using

@@ -16,14 +16,14 @@
 
 package example
 
-import cats.implicits.*
+import cats.implicits._
 
 import cats.effect.kernel.Async
 import cats.effect.std.{Console, Dispatcher}
 import cats.effect.{IO, IOApp}
 
 import nats4cats.Nats
-import nats4cats.unstable.service.*
+import nats4cats.unstable.service._
 
 import org.typelevel.otel4s.oteljava.OtelJava
 import org.typelevel.otel4s.trace.Tracer

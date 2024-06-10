@@ -16,7 +16,7 @@
 
 package nats4cats.unstable.service
 
-import cats.implicits.*
+import cats.implicits._
 
 import cats.effect.kernel.Async
 import cats.effect.std.Dispatcher

@@ -16,7 +16,7 @@
 
 package nats4cats
 
-import cats.implicits.*
+import cats.implicits._
 
 import cats.effect.kernel.Sync
 

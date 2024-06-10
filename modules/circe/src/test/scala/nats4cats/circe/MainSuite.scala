@@ -19,7 +19,7 @@ package nats4cats.circe
 import cats.effect.IO
 import cats.effect.kernel.Resource
 
-import nats4cats.*
+import nats4cats._
 import nats4cats.circe.given
 
 import com.dimafeng.testcontainers.GenericContainer

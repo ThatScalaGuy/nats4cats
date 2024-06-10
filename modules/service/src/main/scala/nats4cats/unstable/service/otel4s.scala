@@ -19,7 +19,7 @@ package nats4cats.unstable.service
 import io.nats.client.impl.Headers
 import org.typelevel.otel4s.context.propagation.{TextMapGetter, TextMapUpdater}
 
-import scala.jdk.CollectionConverters.*
+import scala.jdk.CollectionConverters._
 
 object otel4s {
   given TextMapUpdater[Headers] = new TextMapUpdater[Headers] {
