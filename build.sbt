@@ -91,7 +91,7 @@ lazy val examples = project
     name := "nats4cats-examples",
     libraryDependencies ++= Seq(
       "io.opentelemetry" % "opentelemetry-exporter-otlp"               % "1.44.1" % Runtime,
-      "io.opentelemetry" % "opentelemetry-sdk-extension-autoconfigure" % "1.43.0" % Runtime
+      "io.opentelemetry" % "opentelemetry-sdk-extension-autoconfigure" % "1.44.1" % Runtime
     ),
     javaOptions += "-Dotel.java.global-autoconfigure.enabled=true",
     javaOptions += "-Dotel.service.name=example-service",
