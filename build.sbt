@@ -1,14 +1,14 @@
 lazy val V = new {
   val Scala3          = "3.3.4"
   val Scala213        = "2.13.10"
-  val Cats            = "2.12.0"
-  val CatsEffect      = "3.5.7"
+  val Cats            = "2.13.0"
+  val CatsEffect      = "3.6.1"
   val Nats            = "2.20.5"
-  val Munit           = "1.0.4"
-  val MunitCatsEffect = "2.0.0"
-  val Testcontainers  = "0.41.5"
-  val Circe           = "0.14.10"
-  val Otel4s          = "0.11.2"
+  val Munit           = "1.1.1"
+  val MunitCatsEffect = "2.1.0"
+  val Testcontainers  = "0.41.8"
+  val Circe           = "0.14.13"
+  val Otel4s          = "0.12.0"
 }
 
 // https://typelevel.org/sbt-typelevel/faq.html#what-is-a-base-version-anyway
@@ -90,8 +90,8 @@ lazy val examples = project
   .settings(
     name := "nats4cats-examples",
     libraryDependencies ++= Seq(
-      "io.opentelemetry" % "opentelemetry-exporter-otlp"               % "1.46.0" % Runtime,
-      "io.opentelemetry" % "opentelemetry-sdk-extension-autoconfigure" % "1.46.0" % Runtime
+      "io.opentelemetry" % "opentelemetry-exporter-otlp"               % "1.50.0" % Runtime,
+      "io.opentelemetry" % "opentelemetry-sdk-extension-autoconfigure" % "1.50.0" % Runtime
     ),
     javaOptions += "-Dotel.java.global-autoconfigure.enabled=true",
     javaOptions += "-Dotel.service.name=example-service",
